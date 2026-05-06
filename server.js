@@ -13,17 +13,27 @@ import { write } from "node:fs";
 import { time } from "node:console";
 import { server } from "typescript";
 import { clearInterval } from "node:timers";
+import dns from "node:dns";
+import os from "node:os";
 
 const port = process.env.PORT || 3000;
 
+// getting the local ip address of the server to display it in the console for easier access from other devices in the network
+const options = { family: 4 };
+let localIpAddress;
+
+dns.lookup(os.hostname(), options, (err, addr) => {
+  if (err) {
+    console.error(err);
+  } else {
+    console.log(`IPv4 address: ${addr}`);
+    localIpAddress = addr;
+  }
+});
+
+
 ////////////// CHANGE THIS TO YOUR LOCAL IP ADDRESS ///////////////////
-//const ipAdress = '192.168.178.84'; // Desktop zuhause // LAN
-//const ipAdress = '192.168.178.35'; // Desktop zuhause // WLAN
-//const ipAdress = '192.168.1.188'; // Router
-const ipAdress = '192.168.0.30'; // neuer Router
-//const ipAdress = '192.168.50.115'; // Router2 über Internet
-//const ipAdress = '192.168.1.163'; //Router blau
-//const ipAdress = '192.168.50.239'; // Router schwarz
+const ipAdress = localIpAddress; // neuer Router
 ///////////////////////////////////////////////////////////////////////
 
 const app = express();
