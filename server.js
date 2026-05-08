@@ -182,7 +182,8 @@ let connectedClientNumber = 0;
 /////////////////////////////  VARIABLES  //////////////////////////////////
 // Server Variables
 let allConnectedIds = {}; // store all connected player ids with client types
-let serverStartTime;
+// let serverStartTime;
+const currentServerInstanceId = Date.now().toString();
 let lastUpdateTime = performance.now();
 let deltaT = 0; // time since last update in milliseconds
 let deltaTMultiplier = 1; // multiplier for game values by deltaT
@@ -320,11 +321,12 @@ io.on('connection', (socket) => {
 
     // !3
     socket.on('clientStartTime', (clientStartTime, typeOfClient) => {
-        if (clientStartTime < serverStartTime) {
-            // console.log(`Client start time (${clientStartTime}) is lower than server start time (${serverStartTime}). Forcing reload.`);
-            socket.emit('forceReload');
-            return;
-        }
+        // if (clientStartTime < serverStartTime) {
+        //     // console.log(`Client start time (${clientStartTime}) is lower than server start time (${serverStartTime}). Forcing reload.`);
+        //     socket.emit('forceReload');
+        //     return;
+        // }
+
 
         allConnectedIds[socket.id] = { type: typeOfClient, enterAs: null }; // store the client type with the id
         io.emit('newClientMonitor', socket.id, allConnectedIds[socket.id].type, allConnectedIds[socket.id].enterAs); // send the new client to all connected clients
@@ -343,7 +345,7 @@ io.on('connection', (socket) => {
 
     // !5
     // Send the current state to the new player
-    socket.emit('currentState', playerList, activeColor, playerStartInfos, sceneStartinfos, autoJoin, gameTimerTime);
+    socket.emit('currentState', playerList, activeColor, playerStartInfos, sceneStartinfos, autoJoin, gameTimerTime, currentServerInstanceId);
 
     // start as a previous player
     /*socket.on('continueAsPreviousPlayer', (previousPlayerData) => {
@@ -357,6 +359,7 @@ io.on('connection', (socket) => {
             socket.emit('startPosDenied');
         }
     });*/
+    
 
     // !6
     socket.on('requestEnterAR', (startPlayerNum) => {
@@ -568,12 +571,17 @@ io.on('connection', (socket) => {
         console.log('Leaderboard requested.');
         socket.emit('sendLeaderboard', leaderboard);
     });
+
+    socket.on('close', (code, reason) => {
+        console.log(`Connection closed: Code ${code}, Reason: ${reason}`);
+    });
 });
 
 httpsServer.listen(port, ipAdress, () => {
     // console.log('Server is listening on port https://localhost:' + port);        // for localhost network
     console.log('Server is listening on port https://' + ipAdress + ':' + port);    // for local ip network
-    serverStartTime = Date.now();
+    networkTestArray.push('Server is listening on port https://' + ipAdress + ':' + port);
+    // serverStartTime = Date.now();
 });
 
 ///////////////////////// Game loop and logic /////////////////////////////

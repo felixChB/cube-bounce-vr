@@ -10,7 +10,7 @@ let clientStartTime = Date.now();
 socket.on('connect', () => {
     socket.emit('clientStartTime', clientStartTime, 'leaderboard');
     console.log('This Client ID: ', socket.id);
-    
+
     socket.emit('isLeaderboard');
     socket.emit('requestLeaderboard');
 });
@@ -24,6 +24,21 @@ socket.on('sendLeaderboard', (leaderboard) => {
     console.log('Received leaderboard:', leaderboard);
 
     createLeaderboard(leaderboard);
+});
+
+// ugly approach
+socket.on('currentState', (...args: any[]) => {
+
+    const serverInstanceId: string = args[args.length - 1];
+
+    const savedInstanceId = sessionStorage.getItem('serverInstanceId');
+    if (savedInstanceId && savedInstanceId !== serverInstanceId) {
+        // The server restarted since our last session, force reload
+        sessionStorage.setItem('serverInstanceId', serverInstanceId);
+        window.location.reload();
+        return;
+    }
+    sessionStorage.setItem('serverInstanceId', serverInstanceId);
 });
 
 function createLeaderboard(leaderboard: { id: string; score: number }[]) {
@@ -58,7 +73,7 @@ function createLeaderboard(leaderboard: { id: string; score: number }[]) {
         rankElem.classList.add('rank');
         rankItem.appendChild(rankElem);
         ranksContainer.appendChild(rankItem);
-        
+
         rankCounter++;
     });
 }
