@@ -6,8 +6,8 @@ import { Mesh, StandardMaterial, Color3, Vector3, Quaternion } from '@babylonjs/
 import { WebXRDefaultExperience, WebXRInputSource } from '@babylonjs/core/XR';
 import * as GUI from '@babylonjs/gui';
 
-import { PlayerStartInfo, SceneStartInfos, PlayerGameData, PlayerData, PreviousPlayerData } from './interfaces';
-import { ghostColor } from './static-variables';
+import { PlayerStartInfo, PlayerGameData, PlayerData, PreviousPlayerData } from './interfaces';
+import { sceneVariables, ballStartVariables, ghostColor } from './static-variables';
 import { scene, engine, createBasicScene } from './scene';
 import { guiTextElements, guiRectElements } from './scene';
 
@@ -33,13 +33,12 @@ let playerUsingXR: boolean = false;
 let isVRMode: boolean = true;
 let autoJoinClient: boolean = false; //gets overritten by the server in the current state
 
-let gameTimerTimeClient: number = 0; // game timer time in seconds
+let gameTimeClient: number = 0; // game timer time in seconds
 
 let playerList: { [key: string]: Player } = {};
 let previousPlayer: PreviousPlayerData | null = null;
 getLocalStorage();
 
-let sceneStartInfos: SceneStartInfos;
 let playerStartInfos: { [key: number]: PlayerStartInfo };
 
 let xr: WebXRDefaultExperience;
@@ -153,21 +152,21 @@ class Player implements PlayerData {
         if (this.paddle) {
             if (this.playerNumber == 1 || this.inPosition == 1) {
                 let paddleY, paddleZ;
-                if (this.contrPosR.y + sceneStartInfos.playerPaddleSize.h / 2 > sceneStartInfos.playCubeSize.y) {
-                    paddleY = sceneStartInfos.playCubeSize.y - sceneStartInfos.playerPaddleSize.h / 2;
-                } else if (this.contrPosR.y - sceneStartInfos.playerPaddleSize.h / 2 < sceneStartInfos.playCubeElevation) {
-                    paddleY = sceneStartInfos.playCubeElevation + sceneStartInfos.playerPaddleSize.h / 2;
+                if (this.contrPosR.y + sceneVariables.playerPaddleSize.h / 2 > sceneVariables.playCubeSize.y) {
+                    paddleY = sceneVariables.playCubeSize.y - sceneVariables.playerPaddleSize.h / 2;
+                } else if (this.contrPosR.y - sceneVariables.playerPaddleSize.h / 2 < sceneVariables.playCubeElevation) {
+                    paddleY = sceneVariables.playCubeElevation + sceneVariables.playerPaddleSize.h / 2;
                 } else {
                     paddleY = this.contrPosR.y;
                 }
-                if (this.contrPosR.z + sceneStartInfos.playerPaddleSize.w / 2 > sceneStartInfos.playCubeSize.z / 2) {
-                    paddleZ = sceneStartInfos.playCubeSize.z / 2 - sceneStartInfos.playerPaddleSize.w / 2;
-                } else if (this.contrPosR.z - sceneStartInfos.playerPaddleSize.w / 2 < -sceneStartInfos.playCubeSize.z / 2) {
-                    paddleZ = -sceneStartInfos.playCubeSize.z / 2 + sceneStartInfos.playerPaddleSize.w / 2;
+                if (this.contrPosR.z + sceneVariables.playerPaddleSize.w / 2 > sceneVariables.playCubeSize.z / 2) {
+                    paddleZ = sceneVariables.playCubeSize.z / 2 - sceneVariables.playerPaddleSize.w / 2;
+                } else if (this.contrPosR.z - sceneVariables.playerPaddleSize.w / 2 < -sceneVariables.playCubeSize.z / 2) {
+                    paddleZ = -sceneVariables.playCubeSize.z / 2 + sceneVariables.playerPaddleSize.w / 2;
                 } else {
                     paddleZ = this.contrPosR.z;
                 }
-                this.paddle.position = new Vector3(sceneStartInfos.playCubeSize.x / 2, paddleY, paddleZ);
+                this.paddle.position = new Vector3(sceneVariables.playCubeSize.x / 2, paddleY, paddleZ);
                 if (this.scoreMesh /*&& playerUsingXR*/) {
                     this.scoreMesh.position = this.paddle.position;
                 }
@@ -176,21 +175,21 @@ class Player implements PlayerData {
                 }
             } else if (this.playerNumber == 2 || this.inPosition == 2) {
                 let paddleY, paddleZ;
-                if (this.contrPosR.y + sceneStartInfos.playerPaddleSize.h / 2 > sceneStartInfos.playCubeSize.y) {
-                    paddleY = sceneStartInfos.playCubeSize.y - sceneStartInfos.playerPaddleSize.h / 2;
-                } else if (this.contrPosR.y - sceneStartInfos.playerPaddleSize.h / 2 < sceneStartInfos.playCubeElevation) {
-                    paddleY = sceneStartInfos.playCubeElevation + sceneStartInfos.playerPaddleSize.h / 2;
+                if (this.contrPosR.y + sceneVariables.playerPaddleSize.h / 2 > sceneVariables.playCubeSize.y) {
+                    paddleY = sceneVariables.playCubeSize.y - sceneVariables.playerPaddleSize.h / 2;
+                } else if (this.contrPosR.y - sceneVariables.playerPaddleSize.h / 2 < sceneVariables.playCubeElevation) {
+                    paddleY = sceneVariables.playCubeElevation + sceneVariables.playerPaddleSize.h / 2;
                 } else {
                     paddleY = this.contrPosR.y;
                 }
-                if (this.contrPosR.z + sceneStartInfos.playerPaddleSize.w / 2 > sceneStartInfos.playCubeSize.z / 2) {
-                    paddleZ = sceneStartInfos.playCubeSize.z / 2 - sceneStartInfos.playerPaddleSize.w / 2;
-                } else if (this.contrPosR.z - sceneStartInfos.playerPaddleSize.w / 2 < -sceneStartInfos.playCubeSize.z / 2) {
-                    paddleZ = -sceneStartInfos.playCubeSize.z / 2 + sceneStartInfos.playerPaddleSize.w / 2;
+                if (this.contrPosR.z + sceneVariables.playerPaddleSize.w / 2 > sceneVariables.playCubeSize.z / 2) {
+                    paddleZ = sceneVariables.playCubeSize.z / 2 - sceneVariables.playerPaddleSize.w / 2;
+                } else if (this.contrPosR.z - sceneVariables.playerPaddleSize.w / 2 < -sceneVariables.playCubeSize.z / 2) {
+                    paddleZ = -sceneVariables.playCubeSize.z / 2 + sceneVariables.playerPaddleSize.w / 2;
                 } else {
                     paddleZ = this.contrPosR.z;
                 }
-                this.paddle.position = new Vector3(-sceneStartInfos.playCubeSize.x / 2, paddleY, paddleZ);
+                this.paddle.position = new Vector3(-sceneVariables.playCubeSize.x / 2, paddleY, paddleZ);
                 if (this.scoreMesh /*&& playerUsingXR*/) {
                     this.scoreMesh.position = this.paddle.position;
                 }
@@ -199,21 +198,21 @@ class Player implements PlayerData {
                 }
             } else if (this.playerNumber == 3 || this.inPosition == 3) {
                 let paddleY, paddleX;
-                if (this.contrPosR.y + sceneStartInfos.playerPaddleSize.h / 2 > sceneStartInfos.playCubeSize.y) {
-                    paddleY = sceneStartInfos.playCubeSize.y - sceneStartInfos.playerPaddleSize.h / 2;
-                } else if (this.contrPosR.y - sceneStartInfos.playerPaddleSize.h / 2 < sceneStartInfos.playCubeElevation) {
-                    paddleY = sceneStartInfos.playCubeElevation + sceneStartInfos.playerPaddleSize.h / 2;
+                if (this.contrPosR.y + sceneVariables.playerPaddleSize.h / 2 > sceneVariables.playCubeSize.y) {
+                    paddleY = sceneVariables.playCubeSize.y - sceneVariables.playerPaddleSize.h / 2;
+                } else if (this.contrPosR.y - sceneVariables.playerPaddleSize.h / 2 < sceneVariables.playCubeElevation) {
+                    paddleY = sceneVariables.playCubeElevation + sceneVariables.playerPaddleSize.h / 2;
                 } else {
                     paddleY = this.contrPosR.y;
                 }
-                if (this.contrPosR.x + sceneStartInfos.playerPaddleSize.w / 2 > sceneStartInfos.playCubeSize.x / 2) {
-                    paddleX = sceneStartInfos.playCubeSize.x / 2 - sceneStartInfos.playerPaddleSize.w / 2;
-                } else if (this.contrPosR.x - sceneStartInfos.playerPaddleSize.w / 2 < -sceneStartInfos.playCubeSize.x / 2) {
-                    paddleX = -sceneStartInfos.playCubeSize.x / 2 + sceneStartInfos.playerPaddleSize.w / 2;
+                if (this.contrPosR.x + sceneVariables.playerPaddleSize.w / 2 > sceneVariables.playCubeSize.x / 2) {
+                    paddleX = sceneVariables.playCubeSize.x / 2 - sceneVariables.playerPaddleSize.w / 2;
+                } else if (this.contrPosR.x - sceneVariables.playerPaddleSize.w / 2 < -sceneVariables.playCubeSize.x / 2) {
+                    paddleX = -sceneVariables.playCubeSize.x / 2 + sceneVariables.playerPaddleSize.w / 2;
                 } else {
                     paddleX = this.contrPosR.x;
                 }
-                this.paddle.position = new Vector3(paddleX, paddleY, sceneStartInfos.playCubeSize.z / 2);
+                this.paddle.position = new Vector3(paddleX, paddleY, sceneVariables.playCubeSize.z / 2);
                 if (this.scoreMesh /*&& playerUsingXR*/) {
                     this.scoreMesh.position = this.paddle.position;
                 }
@@ -222,21 +221,21 @@ class Player implements PlayerData {
                 }
             } else if (this.playerNumber == 4 || this.inPosition == 4) {
                 let paddleY, paddleX;
-                if (this.contrPosR.y + sceneStartInfos.playerPaddleSize.h / 2 > sceneStartInfos.playCubeSize.y) {
-                    paddleY = sceneStartInfos.playCubeSize.y - sceneStartInfos.playerPaddleSize.h / 2;
-                } else if (this.contrPosR.y - sceneStartInfos.playerPaddleSize.h / 2 < sceneStartInfos.playCubeElevation) {
-                    paddleY = sceneStartInfos.playCubeElevation + sceneStartInfos.playerPaddleSize.h / 2;
+                if (this.contrPosR.y + sceneVariables.playerPaddleSize.h / 2 > sceneVariables.playCubeSize.y) {
+                    paddleY = sceneVariables.playCubeSize.y - sceneVariables.playerPaddleSize.h / 2;
+                } else if (this.contrPosR.y - sceneVariables.playerPaddleSize.h / 2 < sceneVariables.playCubeElevation) {
+                    paddleY = sceneVariables.playCubeElevation + sceneVariables.playerPaddleSize.h / 2;
                 } else {
                     paddleY = this.contrPosR.y;
                 }
-                if (this.contrPosR.x + sceneStartInfos.playerPaddleSize.w / 2 > sceneStartInfos.playCubeSize.x / 2) {
-                    paddleX = sceneStartInfos.playCubeSize.x / 2 - sceneStartInfos.playerPaddleSize.w / 2;
-                } else if (this.contrPosR.x - sceneStartInfos.playerPaddleSize.w / 2 < -sceneStartInfos.playCubeSize.x / 2) {
-                    paddleX = -sceneStartInfos.playCubeSize.x / 2 + sceneStartInfos.playerPaddleSize.w / 2;
+                if (this.contrPosR.x + sceneVariables.playerPaddleSize.w / 2 > sceneVariables.playCubeSize.x / 2) {
+                    paddleX = sceneVariables.playCubeSize.x / 2 - sceneVariables.playerPaddleSize.w / 2;
+                } else if (this.contrPosR.x - sceneVariables.playerPaddleSize.w / 2 < -sceneVariables.playCubeSize.x / 2) {
+                    paddleX = -sceneVariables.playCubeSize.x / 2 + sceneVariables.playerPaddleSize.w / 2;
                 } else {
                     paddleX = this.contrPosR.x;
                 }
-                this.paddle.position = new Vector3(paddleX, paddleY, -sceneStartInfos.playCubeSize.z / 2);
+                this.paddle.position = new Vector3(paddleX, paddleY, -sceneVariables.playCubeSize.z / 2);
                 if (this.scoreMesh /*&& playerUsingXR*/) {
                     this.scoreMesh.position = this.paddle.position;
                 }
@@ -452,7 +451,7 @@ socket.on('startPosDenied', (errorCode) => {
 // get all current Player Information from the Server at the start
 // and spawning all current players except yourself
 socket.on('currentState', (players: { [key: string]: Player }, ballColor: string,
-    playerStartInfosServer: { [key: number]: PlayerStartInfo }, sceneStartInfosServer: SceneStartInfos, autoJoin: boolean, gameTimerTime: number, serverInstanceId: string) => {
+    playerStartInfosServer: { [key: number]: PlayerStartInfo }, autoJoin: boolean, gameTime: number, serverInstanceId: string) => {
 
     const savedInstanceId = sessionStorage.getItem('serverInstanceId');
     if (savedInstanceId && savedInstanceId !== serverInstanceId) {
@@ -464,14 +463,13 @@ socket.on('currentState', (players: { [key: string]: Player }, ballColor: string
     sessionStorage.setItem('serverInstanceId', serverInstanceId);
 
     autoJoinClient = autoJoin;
-    gameTimerTimeClient = gameTimerTime;
+    gameTimeClient = gameTime;
 
-    sceneStartInfos = sceneStartInfosServer;
     playerStartInfos = playerStartInfosServer;
 
     // Basic Stuff from the srever for the website and the scene
     // create the Basic babylonjs scene with the infos from the server
-    createBasicScene(sceneStartInfos, playerStartInfos);
+    createBasicScene(sceneVariables, ballStartVariables, playerStartInfos);
     // set the start button color for the players
     setStartButtonColor(playerStartInfos);
 
@@ -835,13 +833,13 @@ socket.on('inPosChange', (playerId, newInPos) => {
     if (newInPos != 0) {
         (playerList[playerId].paddle as Mesh).rotation = new Vector3(playerStartInfos[playerList[playerId].inPosition].rotation.x, playerStartInfos[playerList[playerId].inPosition].rotation.y, playerStartInfos[playerList[playerId].inPosition].rotation.z);
         if (playerList[playerId].inPosition == 1) {
-            (playerList[playerId].paddle as Mesh).position = new Vector3(sceneStartInfos.playCubeSize.x / 2, playerList[playerId].contrPosR.y, playerList[playerId].contrPosR.z);
+            (playerList[playerId].paddle as Mesh).position = new Vector3(sceneVariables.playCubeSize.x / 2, playerList[playerId].contrPosR.y, playerList[playerId].contrPosR.z);
         } else if (playerList[playerId].inPosition == 2) {
-            (playerList[playerId].paddle as Mesh).position = new Vector3(-sceneStartInfos.playCubeSize.x / 2, playerList[playerId].contrPosR.y, playerList[playerId].contrPosR.z);
+            (playerList[playerId].paddle as Mesh).position = new Vector3(-sceneVariables.playCubeSize.x / 2, playerList[playerId].contrPosR.y, playerList[playerId].contrPosR.z);
         } else if (playerList[playerId].inPosition == 3) {
-            (playerList[playerId].paddle as Mesh).position = new Vector3(playerList[playerId].contrPosR.x, playerList[playerId].contrPosR.y, sceneStartInfos.playCubeSize.z / 2);
+            (playerList[playerId].paddle as Mesh).position = new Vector3(playerList[playerId].contrPosR.x, playerList[playerId].contrPosR.y, sceneVariables.playCubeSize.z / 2);
         } else if (playerList[playerId].inPosition == 4) {
-            (playerList[playerId].paddle as Mesh).position = new Vector3(playerList[playerId].contrPosR.x, playerList[playerId].contrPosR.y, -sceneStartInfos.playCubeSize.z / 2);
+            (playerList[playerId].paddle as Mesh).position = new Vector3(playerList[playerId].contrPosR.x, playerList[playerId].contrPosR.y, -sceneVariables.playCubeSize.z / 2);
         }
     }
 });
@@ -983,20 +981,20 @@ function addPlayerGameUtils(player: Player, isPlayer: boolean) {
 
     // add the players paddle
     player.paddle = MeshBuilder.CreateBox(`player_${player.id}_paddle`, { size: 1 });
-    player.paddle.scaling = new Vector3(sceneStartInfos.playerPaddleSize.w, sceneStartInfos.playerPaddleSize.h, paddleThickness);
+    player.paddle.scaling = new Vector3(sceneVariables.playerPaddleSize.w, sceneVariables.playerPaddleSize.h, paddleThickness);
     player.paddle.rotation = new Vector3(playerStartInfos[player.inPosition].rotation.x, playerStartInfos[player.inPosition].rotation.y, playerStartInfos[player.inPosition].rotation.z);
     if (player.inPosition == 1) {
-        //player.paddle.scaling = new Vector3(paddleThickness, sceneStartInfos.playerPaddleSize.h, sceneStartInfos.playerPaddleSize.w);
-        player.paddle.position = new Vector3(sceneStartInfos.playCubeSize.x / 2, player.contrPosR.y, player.contrPosR.z);
+        //player.paddle.scaling = new Vector3(paddleThickness, sceneVariables.playerPaddleSize.h, sceneVariables.playerPaddleSize.w);
+        player.paddle.position = new Vector3(sceneVariables.playCubeSize.x / 2, player.contrPosR.y, player.contrPosR.z);
     } else if (player.inPosition == 2) {
-        //player.paddle.scaling = new Vector3(paddleThickness, sceneStartInfos.playerPaddleSize.h, sceneStartInfos.playerPaddleSize.w);
-        player.paddle.position = new Vector3(-sceneStartInfos.playCubeSize.x / 2, player.contrPosR.y, player.contrPosR.z);
+        //player.paddle.scaling = new Vector3(paddleThickness, sceneVariables.playerPaddleSize.h, sceneVariables.playerPaddleSize.w);
+        player.paddle.position = new Vector3(-sceneVariables.playCubeSize.x / 2, player.contrPosR.y, player.contrPosR.z);
     } else if (player.inPosition == 3) {
-        //player.paddle.scaling = new Vector3(sceneStartInfos.playerPaddleSize.w, sceneStartInfos.playerPaddleSize.h, paddleThickness);
-        player.paddle.position = new Vector3(player.contrPosR.x, player.contrPosR.y, sceneStartInfos.playCubeSize.z / 2);
+        //player.paddle.scaling = new Vector3(sceneVariables.playerPaddleSize.w, sceneVariables.playerPaddleSize.h, paddleThickness);
+        player.paddle.position = new Vector3(player.contrPosR.x, player.contrPosR.y, sceneVariables.playCubeSize.z / 2);
     } else if (player.inPosition == 4) {
-        //player.paddle.scaling = new Vector3(sceneStartInfos.playerPaddleSize.w, sceneStartInfos.playerPaddleSize.h, paddleThickness);
-        player.paddle.position = new Vector3(player.contrPosR.x, player.contrPosR.y, -sceneStartInfos.playCubeSize.z / 2);
+        //player.paddle.scaling = new Vector3(sceneVariables.playerPaddleSize.w, sceneVariables.playerPaddleSize.h, paddleThickness);
+        player.paddle.position = new Vector3(player.contrPosR.x, player.contrPosR.y, -sceneVariables.playCubeSize.z / 2);
     } else if (player.inPosition == 0) {
         player.paddle.position = new Vector3(player.contrPosR.x, player.contrPosR.y, player.contrPosR.z);
     }
@@ -1017,13 +1015,13 @@ function addPlayerGameUtils(player: Player, isPlayer: boolean) {
     //player.scoreMesh.position = new Vector3(player.contrPosR.x, player.contrPosR.y, player.contrPosR.z);
     //} else {
     if (player.playerNumber == 1) {
-        player.scoreMesh.position = new Vector3(sceneStartInfos.playCubeSize.x / 2, sceneStartInfos.midPointOfPlayCube, 0);
+        player.scoreMesh.position = new Vector3(sceneVariables.playCubeSize.x / 2, sceneVariables.midPointOfPlayCube, 0);
     } else if (player.playerNumber == 2) {
-        player.scoreMesh.position = new Vector3(-(sceneStartInfos.playCubeSize.x / 2), sceneStartInfos.midPointOfPlayCube, 0);
+        player.scoreMesh.position = new Vector3(-(sceneVariables.playCubeSize.x / 2), sceneVariables.midPointOfPlayCube, 0);
     } else if (player.playerNumber == 3) {
-        player.scoreMesh.position = new Vector3(0, sceneStartInfos.midPointOfPlayCube, (sceneStartInfos.playCubeSize.z / 2));
+        player.scoreMesh.position = new Vector3(0, sceneVariables.midPointOfPlayCube, (sceneVariables.playCubeSize.z / 2));
     } else if (player.playerNumber == 4) {
-        player.scoreMesh.position = new Vector3(0, sceneStartInfos.midPointOfPlayCube, -(sceneStartInfos.playCubeSize.z / 2));
+        player.scoreMesh.position = new Vector3(0, sceneVariables.midPointOfPlayCube, -(sceneVariables.playCubeSize.z / 2));
     } else if (player.playerNumber == 0) {
         player.scoreMesh.position = new Vector3(player.contrPosR.x, player.contrPosR.y, player.contrPosR.z);
     }
@@ -1199,13 +1197,13 @@ socket.on('playerDisconnected', (id) => {
 
             // player score back to normal position
             if (disconnectedPlayer.playerNumber == 1) {
-                playerScore.position = new Vector3((sceneStartInfos.playCubeSize.x / 2), sceneStartInfos.playCubeSize.x / 2, 0);
+                playerScore.position = new Vector3((sceneVariables.playCubeSize.x / 2), sceneVariables.playCubeSize.x / 2, 0);
             } else if (disconnectedPlayer.playerNumber == 2) {
-                playerScore.position = new Vector3(-(sceneStartInfos.playCubeSize.x / 2), sceneStartInfos.playCubeSize.x / 2, 0);
+                playerScore.position = new Vector3(-(sceneVariables.playCubeSize.x / 2), sceneVariables.playCubeSize.x / 2, 0);
             } else if (disconnectedPlayer.playerNumber == 3) {
-                playerScore.position = new Vector3(0, sceneStartInfos.playCubeSize.x / 2, (sceneStartInfos.playCubeSize.z / 2));
+                playerScore.position = new Vector3(0, sceneVariables.playCubeSize.x / 2, (sceneVariables.playCubeSize.z / 2));
             } else if (disconnectedPlayer.playerNumber == 4) {
-                playerScore.position = new Vector3(0, sceneStartInfos.playCubeSize.x / 2, -(sceneStartInfos.playCubeSize.z / 2));
+                playerScore.position = new Vector3(0, sceneVariables.playCubeSize.x / 2, -(sceneVariables.playCubeSize.z / 2));
             }
         }
 
@@ -1391,7 +1389,7 @@ function handleMouseOver(playerNumber: number, isPreButton: boolean = false) {
             // change camera position to the player start position while hovering over the button
             let defaultCamera = scene.getCameraByName('Camera') as FreeCamera;
 
-            let cameraHight = sceneStartInfos.playCubeSize.y / 1.5;
+            let cameraHight = sceneVariables.playCubeSize.y / 1.5;
 
             let newRotation = new Vector3(playerStartInfo.rotation.x, playerStartInfo.rotation.y, playerStartInfo.rotation.z);
             let newPosition = new Vector3(playerStartInfo.position.x, cameraHight, playerStartInfo.position.z);

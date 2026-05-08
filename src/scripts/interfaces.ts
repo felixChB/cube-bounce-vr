@@ -6,17 +6,21 @@ export interface PlayerStartInfo {
     used: boolean;
 }
 
-export interface SceneStartInfos {
+export interface SceneVariables {
     playCubeSize: { x: number, y: number, z: number };
     playCubeElevation: number;
     playerAreaDistance: number;
     playerAreaDepth: number;
-    playerPaddleSize: { w: number, h: number };
-    ballSize: number;
-    ballStartPos: { x: number, y: number, z: number };
-    ballColor: string;
     calculatedCubeHeight: number;
     midPointOfPlayCube: number;
+    playerPaddleSize: { w: number, h: number };
+}
+
+export interface BallStartVariables {
+    position: { x: number, y: number, z: number };
+    color: string;
+    speed: number;
+    size: number;
 }
 
 // interface Ball {

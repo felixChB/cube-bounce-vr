@@ -17,9 +17,9 @@ import dns from "node:dns";
 import os from "node:os";
 
 // imports for server specific variables and functions
-import { refreshRate, maxPlayers, autoJoin } from "./src/scripts/static-variables.ts";
+import { refreshRate, maxPlayers, autoJoin, ghostColor } from "./src/scripts/static-variables.ts";
 // imports for game/scene specific variables and functions
-import { playCubeSize, playCubeElevation, playerAreaDepth, playerAreaDistance, playerPaddleSize, ballStartSpeed, ballStartColor, calculatedCubeHeight, midPointOfPlayCube } from "./src/scripts/static-variables.ts";
+import { sceneVariables, ballStartVariables } from "./src/scripts/static-variables.ts";
 
 
 const port = process.env.PORT || 3000;
@@ -189,7 +189,7 @@ let deltaT = 0; // time since last update in milliseconds
 let deltaTMultiplier = 1; // multiplier for game values by deltaT
 
 let gameTimer = null; // timer for the game to end after a certain time
-const gameTimerTime = 300000; // in milliseconds, 5 minutes
+const gameTime = 300000; // in milliseconds, 5 minutes
 let timerInSeconds = 0; // timer in seconds, used for the game timer
 
 // Store all connected players
@@ -221,83 +221,69 @@ readLeaderboardFromFile();
 
 // define the limits of the different areas for each player position
 // used to calculate if a player is in the correct area or not, and to trigger the area entered and area exit events
-const position1PositiveAreaLimit = playCubeSize.z / 2;
-const position1NegativeAreaLimit = -playCubeSize.z / 2;
-const position1FontAreaLimit = playCubeSize.x / 2 + playerAreaDistance;
-const position1BackAreaLimit = playCubeSize.x / 2 + playerAreaDistance + playerAreaDepth;
+const position1PositiveAreaLimit = sceneVariables.playCubeSize.z / 2;
+const position1NegativeAreaLimit = -sceneVariables.playCubeSize.z / 2;
+const position1FontAreaLimit = sceneVariables.playCubeSize.x / 2 + sceneVariables.playerAreaDistance;
+const position1BackAreaLimit = sceneVariables.playCubeSize.x / 2 + sceneVariables.playerAreaDistance + sceneVariables.playerAreaDepth;
 
-const position2PositiveAreaLimit = playCubeSize.z / 2;
-const position2NegativeAreaLimit = -playCubeSize.z / 2;
-const position2FontAreaLimit = -(playCubeSize.x / 2 + playerAreaDistance);
-const position2BackAreaLimit = -(playCubeSize.x / 2 + playerAreaDistance + playerAreaDepth);
+const position2PositiveAreaLimit = sceneVariables.playCubeSize.z / 2;
+const position2NegativeAreaLimit = -sceneVariables.playCubeSize.z / 2;
+const position2FontAreaLimit = -(sceneVariables.playCubeSize.x / 2 + sceneVariables.playerAreaDistance);
+const position2BackAreaLimit = -(sceneVariables.playCubeSize.x / 2 + sceneVariables.playerAreaDistance + sceneVariables.playerAreaDepth);
 
-const position3PositiveAreaLimit = playCubeSize.x / 2;
-const position3NegativeAreaLimit = -playCubeSize.x / 2;
-const position3FontAreaLimit = playCubeSize.z / 2 + playerAreaDistance;
-const position3BackAreaLimit = playCubeSize.z / 2 + playerAreaDistance + playerAreaDepth;
+const position3PositiveAreaLimit = sceneVariables.playCubeSize.x / 2;
+const position3NegativeAreaLimit = -sceneVariables.playCubeSize.x / 2;
+const position3FontAreaLimit = sceneVariables.playCubeSize.z / 2 + sceneVariables.playerAreaDistance;
+const position3BackAreaLimit = sceneVariables.playCubeSize.z / 2 + sceneVariables.playerAreaDistance + sceneVariables.playerAreaDepth;
 
-const position4PositiveAreaLimit = playCubeSize.x / 2;
-const position4NegativeAreaLimit = -playCubeSize.x / 2;
-const position4FontAreaLimit = -(playCubeSize.z / 2 + playerAreaDistance);
-const position4BackAreaLimit = -(playCubeSize.z / 2 + playerAreaDistance + playerAreaDepth);
+const position4PositiveAreaLimit = sceneVariables.playCubeSize.x / 2;
+const position4NegativeAreaLimit = -sceneVariables.playCubeSize.x / 2;
+const position4FontAreaLimit = -(sceneVariables.playCubeSize.z / 2 + sceneVariables.playerAreaDistance);
+const position4BackAreaLimit = -(sceneVariables.playCubeSize.z / 2 + sceneVariables.playerAreaDistance + sceneVariables.playerAreaDepth);
 // end limits
 
-let activeColor = ballStartColor;
+let activeColor = ballStartVariables.color;
 
 let ball = {
-    position: { x: 0, y: midPointOfPlayCube, z: 0 },
+    position: ballStartVariables.position,
     velocity: getNormalizedVector({ x: getRandomNumber(0.5, 2), y: getRandomNumber(0.5, 1), z: getRandomNumber(0.5, 2) }),
-    speed: ballStartSpeed,
-    size: 0.03,
-    color: ballStartColor
-}
-
-let sceneStartinfos = {
-    playCubeSize: playCubeSize,
-    playCubeElevation: playCubeElevation,
-    playerAreaDistance: playerAreaDistance,
-    playerAreaDepth: playerAreaDepth,
-    playerPaddleSize: playerPaddleSize,
-    ballSize: ball.size,
-    ballStartPos: ball.position,
-    ballColor: ball.color,
-    calculatedCubeHeight: calculatedCubeHeight,
-    midPointOfPlayCube: midPointOfPlayCube,
+    speed: ballStartVariables.speed,
+    size: ballStartVariables.size,
+    color: ballStartVariables.color
 }
 
 let playerStartInfos = {
-
     0: {
         playerNumber: 0,
         position: { x: 2, y: 0, z: 2 }, // adjust to the real life layout
         rotation: { x: 0, y: -Math.PI / 2, z: 0 }, // adjust to the real life layout
-        color: '#bdbdbd', // ghostColor
+        color: ghostColor,
         used: false // will always stay false
     },
     1: {
         playerNumber: 1,
-        position: { x: (playCubeSize.x / 2 + playerAreaDepth / 2 + playerAreaDistance), y: 0, z: 0 },
+        position: { x: (sceneVariables.playCubeSize.x / 2 + sceneVariables.playerAreaDepth / 2 + sceneVariables.playerAreaDistance), y: 0, z: 0 },
         rotation: { x: 0, y: -Math.PI / 2, z: 0 },
         color: '#00ffff', //CMY //Cyan
         used: false
     },
     2: {
         playerNumber: 2,
-        position: { x: -(playCubeSize.x / 2 + playerAreaDepth / 2 + playerAreaDistance), y: 0, z: 0 },
+        position: { x: -(sceneVariables.playCubeSize.x / 2 + sceneVariables.playerAreaDepth / 2 + sceneVariables.playerAreaDistance), y: 0, z: 0 },
         rotation: { x: 0, y: Math.PI / 2, z: 0 },
         color: '#ff00ff', //CMY //Magenta
         used: false
     },
     3: {
         playerNumber: 3,
-        position: { x: 0, y: 0, z: (playCubeSize.z / 2 + playerAreaDepth / 2 + playerAreaDistance) },
+        position: { x: 0, y: 0, z: (sceneVariables.playCubeSize.z / 2 + sceneVariables.playerAreaDepth / 2 + sceneVariables.playerAreaDistance) },
         rotation: { x: 0, y: Math.PI, z: 0 },
         color: '#ffff00', //CMY //Yellow
         used: false
     },
     4: {
         playerNumber: 4,
-        position: { x: 0, y: 0, z: -(playCubeSize.z / 2 + playerAreaDepth / 2 + playerAreaDistance) },
+        position: { x: 0, y: 0, z: -(sceneVariables.playCubeSize.z / 2 + sceneVariables.playerAreaDepth / 2 + sceneVariables.playerAreaDistance) },
         rotation: { x: 0, y: 0, z: 0 },
         color: '#1aa543', //CMY //Green
         used: false
@@ -341,25 +327,10 @@ io.on('connection', (socket) => {
     socket.join('waitingRoom');
     // !4
     socket.emit('joinedWaitingRoom');
-    /*socket.emit('timeForPreviousPlayers');*/
 
     // !5
     // Send the current state to the new player
-    socket.emit('currentState', playerList, activeColor, playerStartInfos, sceneStartinfos, autoJoin, gameTimerTime, currentServerInstanceId);
-
-    // start as a previous player
-    /*socket.on('continueAsPreviousPlayer', (previousPlayerData) => {
-        if (playerStartInfos[previousPlayerData.playerNumber].used == false) {
-            playerStartInfos[previousPlayerData.playerNumber].used = true;
-
-            const newPlayer = new Player(socket.id, previousPlayerData);
-
-            playerStartPlaying(newPlayer, socket);
-        } else {
-            socket.emit('startPosDenied');
-        }
-    });*/
-    
+    socket.emit('currentState', playerList, activeColor, playerStartInfos, autoJoin, gameTime, currentServerInstanceId);
 
     // !6
     socket.on('requestEnterAR', (startPlayerNum) => {
@@ -619,52 +590,53 @@ setInterval(function () {
     // if there are players in the game
     if (onePlayerPlaying) {
         // Update the ball position
+        console.log(`Ball position before update: x=${ball.position.x.toFixed(2)}, y=${ball.position.y.toFixed(2)}, z=${ball.position.z.toFixed(2)}`);
         ball.position.x += ball.velocity.x * ball.speed * deltaTMultiplier;
         ball.position.y += ball.velocity.y * ball.speed * deltaTMultiplier;
         ball.position.z += ball.velocity.z * ball.speed * deltaTMultiplier;
 
-        // if (ball.position.x < playCubeSize.x / 2 || ball.position.x > -playCubeSize.x / 2 || ball.position.z < playCubeSize.z / 2 || ball.position.z > -playCubeSize.z / 2) {
+        // if (ball.position.x < sceneVariables.playCubeSize.x / 2 || ball.position.x > -sceneVariables.playCubeSize.x / 2 || ball.position.z < sceneVariables.playCubeSize.z / 2 || ball.position.z > -sceneVariables.playCubeSize.z / 2) {
 
         // Bounce off walls --------------------------------------------------------------------------------------
         // Always bounce the ball off the top and bottom of the playCube
         // top
-        if (ball.position.y + ball.size >= playCubeSize.y) {
-            ball.position.y = playCubeSize.y - ball.size;
+        if (ball.position.y + ball.size >= sceneVariables.playCubeSize.y) {
+            ball.position.y = sceneVariables.playCubeSize.y - ball.size;
             ball.velocity.y *= -1;  // Reverse Y velocity
             ballBounce(5, false);
         }
         //bottom
-        if (ball.position.y - ball.size <= playCubeElevation) {
-            ball.position.y = playCubeElevation + ball.size;
+        if (ball.position.y - ball.size <= sceneVariables.playCubeElevation) {
+            ball.position.y = sceneVariables.playCubeElevation + ball.size;
             ball.velocity.y *= -1;  // Reverse Y velocity
             ballBounce(6, false);
         }
 
         // Bounce the ball of the wall if there is no player
         if (playerStartInfos[1].used == false) {
-            if (ball.position.x + ball.size >= playCubeSize.x / 2) {
-                ball.position.x = playCubeSize.x / 2 - ball.size;
+            if (ball.position.x + ball.size >= sceneVariables.playCubeSize.x / 2) {
+                ball.position.x = sceneVariables.playCubeSize.x / 2 - ball.size;
                 ball.velocity.x *= -1;  // Reverse X velocity
                 ballBounce(1, false);
             }
         }
         if (playerStartInfos[2].used == false) {
-            if (ball.position.x - ball.size <= -playCubeSize.x / 2) {
-                ball.position.x = -playCubeSize.x / 2 + ball.size;
+            if (ball.position.x - ball.size <= -sceneVariables.playCubeSize.x / 2) {
+                ball.position.x = -sceneVariables.playCubeSize.x / 2 + ball.size;
                 ball.velocity.x *= -1;  // Reverse X velocity
                 ballBounce(2, false);
             }
         }
         if (playerStartInfos[3].used == false) {
-            if (ball.position.z + ball.size >= playCubeSize.z / 2) {
-                ball.position.z = playCubeSize.z / 2 - ball.size;
+            if (ball.position.z + ball.size >= sceneVariables.playCubeSize.z / 2) {
+                ball.position.z = sceneVariables.playCubeSize.z / 2 - ball.size;
                 ball.velocity.z *= -1;  // Reverse Z velocity
                 ballBounce(3, false);
             }
         }
         if (playerStartInfos[4].used == false) {
-            if (ball.position.z - ball.size <= -playCubeSize.z / 2) {
-                ball.position.z = -playCubeSize.z / 2 + ball.size;
+            if (ball.position.z - ball.size <= -sceneVariables.playCubeSize.z / 2) {
+                ball.position.z = -sceneVariables.playCubeSize.z / 2 + ball.size;
                 ball.velocity.z *= -1;  // Reverse Z velocity
                 ballBounce(4, false);
             }
@@ -676,26 +648,26 @@ setInterval(function () {
             if (playerList[key].playerNumber == 1) {
                 // clamp the paddle position to the play area
                 let paddleY, paddleZ;
-                if (playerList[key].contrPosR.y + playerPaddleSize.h / 2 > playCubeSize.y) {
-                    paddleY = playCubeSize.y - playerPaddleSize.h / 2;
-                } else if (playerList[key].contrPosR.y - playerPaddleSize.h / 2 < playCubeElevation) {
-                    paddleY = playCubeElevation + playerPaddleSize.h / 2;
+                if (playerList[key].contrPosR.y + sceneVariables.playerPaddleSize.h / 2 > sceneVariables.playCubeSize.y) {
+                    paddleY = sceneVariables.playCubeSize.y - sceneVariables.playerPaddleSize.h / 2;
+                } else if (playerList[key].contrPosR.y - sceneVariables.playerPaddleSize.h / 2 < sceneVariables.playCubeElevation) {
+                    paddleY = sceneVariables.playCubeElevation + sceneVariables.playerPaddleSize.h / 2;
                 } else {
                     paddleY = playerList[key].contrPosR.y;
                 }
-                if (playerList[key].contrPosR.z + playerPaddleSize.w / 2 > playCubeSize.z / 2) {
-                    paddleZ = playCubeSize.z / 2 - playerPaddleSize.w / 2;
-                } else if (playerList[key].contrPosR.z - playerPaddleSize.w / 2 < -playCubeSize.z / 2) {
-                    paddleZ = -playCubeSize.z / 2 + playerPaddleSize.w / 2;
+                if (playerList[key].contrPosR.z + sceneVariables.playerPaddleSize.w / 2 > sceneVariables.playCubeSize.z / 2) {
+                    paddleZ = sceneVariables.playCubeSize.z / 2 - sceneVariables.playerPaddleSize.w / 2;
+                } else if (playerList[key].contrPosR.z - sceneVariables.playerPaddleSize.w / 2 < -sceneVariables.playCubeSize.z / 2) {
+                    paddleZ = -sceneVariables.playCubeSize.z / 2 + sceneVariables.playerPaddleSize.w / 2;
                 } else {
                     paddleZ = playerList[key].contrPosR.z;
                 }
                 // clamped paddle position to use for the collision and bounce calculation
-                let clampedPaddlePos = { x: playCubeSize.x / 2, y: paddleY, z: paddleZ };
+                let clampedPaddlePos = { x: sceneVariables.playCubeSize.x / 2, y: paddleY, z: paddleZ };
 
-                if (ball.position.x + ball.size >= playCubeSize.x / 2 && ball.position.x < playCubeSize.x / 2 + ball.size &&
-                    clampedPaddlePos.z - playerPaddleSize.w / 2 <= ball.position.z + ball.size && ball.position.z - ball.size <= clampedPaddlePos.z + playerPaddleSize.w / 2 &&
-                    clampedPaddlePos.y - playerPaddleSize.h / 2 <= ball.position.y + ball.size && ball.position.y - ball.size <= clampedPaddlePos.y + playerPaddleSize.h / 2) {
+                if (ball.position.x + ball.size >= sceneVariables.playCubeSize.x / 2 && ball.position.x < sceneVariables.playCubeSize.x / 2 + ball.size &&
+                    clampedPaddlePos.z - sceneVariables.playerPaddleSize.w / 2 <= ball.position.z + ball.size && ball.position.z - ball.size <= clampedPaddlePos.z + sceneVariables.playerPaddleSize.w / 2 &&
+                    clampedPaddlePos.y - sceneVariables.playerPaddleSize.h / 2 <= ball.position.y + ball.size && ball.position.y - ball.size <= clampedPaddlePos.y + sceneVariables.playerPaddleSize.h / 2) {
                     if (ball.velocity.x >= 0) {
                         // ball.velocity.x *= -1;  // Reverse X velocity
                         calculateBallBounce(clampedPaddlePos, playerList[key].playerNumber);
@@ -709,26 +681,26 @@ setInterval(function () {
             } else if (playerList[key].playerNumber == 2) {
                 // clamp the paddle position to the play area
                 let paddleY, paddleZ;
-                if (playerList[key].contrPosR.y + playerPaddleSize.h / 2 > playCubeSize.y) {
-                    paddleY = playCubeSize.y - playerPaddleSize.h / 2;
-                } else if (playerList[key].contrPosR.y - playerPaddleSize.h / 2 < playCubeElevation) {
-                    paddleY = playCubeElevation + playerPaddleSize.h / 2;
+                if (playerList[key].contrPosR.y + sceneVariables.playerPaddleSize.h / 2 > sceneVariables.playCubeSize.y) {
+                    paddleY = sceneVariables.playCubeSize.y - sceneVariables.playerPaddleSize.h / 2;
+                } else if (playerList[key].contrPosR.y - sceneVariables.playerPaddleSize.h / 2 < sceneVariables.playCubeElevation) {
+                    paddleY = sceneVariables.playCubeElevation + sceneVariables.playerPaddleSize.h / 2;
                 } else {
                     paddleY = playerList[key].contrPosR.y;
                 }
-                if (playerList[key].contrPosR.z + playerPaddleSize.w / 2 > playCubeSize.z / 2) {
-                    paddleZ = playCubeSize.z / 2 - playerPaddleSize.w / 2;
-                } else if (playerList[key].contrPosR.z - playerPaddleSize.w / 2 < -playCubeSize.z / 2) {
-                    paddleZ = -playCubeSize.z / 2 + playerPaddleSize.w / 2;
+                if (playerList[key].contrPosR.z + sceneVariables.playerPaddleSize.w / 2 > sceneVariables.playCubeSize.z / 2) {
+                    paddleZ = sceneVariables.playCubeSize.z / 2 - sceneVariables.playerPaddleSize.w / 2;
+                } else if (playerList[key].contrPosR.z - sceneVariables.playerPaddleSize.w / 2 < -sceneVariables.playCubeSize.z / 2) {
+                    paddleZ = -sceneVariables.playCubeSize.z / 2 + sceneVariables.playerPaddleSize.w / 2;
                 } else {
                     paddleZ = playerList[key].contrPosR.z;
                 }
                 // clamped paddle position to use for the collision and bounce calculation
-                let clampedPaddlePos = { x: -playCubeSize.x / 2, y: paddleY, z: paddleZ };
+                let clampedPaddlePos = { x: -sceneVariables.playCubeSize.x / 2, y: paddleY, z: paddleZ };
 
-                if (ball.position.x - ball.size <= -playCubeSize.x / 2 && ball.position.x > -playCubeSize.x / 2 - ball.size &&
-                    clampedPaddlePos.z - playerPaddleSize.w / 2 <= ball.position.z + ball.size && ball.position.z - ball.size <= clampedPaddlePos.z + playerPaddleSize.w / 2 &&
-                    clampedPaddlePos.y - playerPaddleSize.h / 2 <= ball.position.y + ball.size && ball.position.y - ball.size <= clampedPaddlePos.y + playerPaddleSize.h / 2) {
+                if (ball.position.x - ball.size <= -sceneVariables.playCubeSize.x / 2 && ball.position.x > -sceneVariables.playCubeSize.x / 2 - ball.size &&
+                    clampedPaddlePos.z - sceneVariables.playerPaddleSize.w / 2 <= ball.position.z + ball.size && ball.position.z - ball.size <= clampedPaddlePos.z + sceneVariables.playerPaddleSize.w / 2 &&
+                    clampedPaddlePos.y - sceneVariables.playerPaddleSize.h / 2 <= ball.position.y + ball.size && ball.position.y - ball.size <= clampedPaddlePos.y + sceneVariables.playerPaddleSize.h / 2) {
                     if (ball.velocity.x < 0) {
                         // ball.velocity.x *= -1;  // Reverse X velocity
                         calculateBallBounce(clampedPaddlePos, playerList[key].playerNumber);
@@ -741,26 +713,26 @@ setInterval(function () {
             } else if (playerList[key].playerNumber == 3) {
                 // clamp the paddle position to the play area
                 let paddleY, paddleX;
-                if (playerList[key].contrPosR.y + playerPaddleSize.h / 2 > playCubeSize.y) {
-                    paddleY = playCubeSize.y - playerPaddleSize.h / 2;
-                } else if (playerList[key].contrPosR.y - playerPaddleSize.h / 2 < playCubeElevation) {
-                    paddleY = playCubeElevation + playerPaddleSize.h / 2;
+                if (playerList[key].contrPosR.y + sceneVariables.playerPaddleSize.h / 2 > sceneVariables.playCubeSize.y) {
+                    paddleY = sceneVariables.playCubeSize.y - sceneVariables.playerPaddleSize.h / 2;
+                } else if (playerList[key].contrPosR.y - sceneVariables.playerPaddleSize.h / 2 < sceneVariables.playCubeElevation) {
+                    paddleY = sceneVariables.playCubeElevation + sceneVariables.playerPaddleSize.h / 2;
                 } else {
                     paddleY = playerList[key].contrPosR.y;
                 }
-                if (playerList[key].contrPosR.x + playerPaddleSize.w / 2 > playCubeSize.x / 2) {
-                    paddleX = playCubeSize.x / 2 - playerPaddleSize.w / 2;
-                } else if (playerList[key].contrPosR.x - playerPaddleSize.w / 2 < -playCubeSize.x / 2) {
-                    paddleX = -playCubeSize.x / 2 + playerPaddleSize.w / 2;
+                if (playerList[key].contrPosR.x + sceneVariables.playerPaddleSize.w / 2 > sceneVariables.playCubeSize.x / 2) {
+                    paddleX = sceneVariables.playCubeSize.x / 2 - sceneVariables.playerPaddleSize.w / 2;
+                } else if (playerList[key].contrPosR.x - sceneVariables.playerPaddleSize.w / 2 < -sceneVariables.playCubeSize.x / 2) {
+                    paddleX = -sceneVariables.playCubeSize.x / 2 + sceneVariables.playerPaddleSize.w / 2;
                 } else {
                     paddleX = playerList[key].contrPosR.x;
                 }
                 // clamped paddle position to use for the collision and bounce calculation
-                let clampedPaddlePos = { x: paddleX, y: paddleY, z: playCubeSize.z / 2 };
+                let clampedPaddlePos = { x: paddleX, y: paddleY, z: sceneVariables.playCubeSize.z / 2 };
 
-                if (ball.position.z + ball.size >= playCubeSize.z / 2 && ball.position.z < playCubeSize.x / 2 + ball.size &&
-                    clampedPaddlePos.x - playerPaddleSize.w / 2 < ball.position.x + ball.size && ball.position.x - ball.size < clampedPaddlePos.x + playerPaddleSize.w / 2 &&
-                    clampedPaddlePos.y - playerPaddleSize.h / 2 < ball.position.y + ball.size && ball.position.y - ball.size < clampedPaddlePos.y + playerPaddleSize.h / 2) {
+                if (ball.position.z + ball.size >= sceneVariables.playCubeSize.z / 2 && ball.position.z < sceneVariables.playCubeSize.x / 2 + ball.size &&
+                    clampedPaddlePos.x - sceneVariables.playerPaddleSize.w / 2 < ball.position.x + ball.size && ball.position.x - ball.size < clampedPaddlePos.x + sceneVariables.playerPaddleSize.w / 2 &&
+                    clampedPaddlePos.y - sceneVariables.playerPaddleSize.h / 2 < ball.position.y + ball.size && ball.position.y - ball.size < clampedPaddlePos.y + sceneVariables.playerPaddleSize.h / 2) {
                     if (ball.velocity.z >= 0) {
                         // ball.velocity.z *= -1;  // Reverse Z velocity
                         calculateBallBounce(clampedPaddlePos, playerList[key].playerNumber);
@@ -773,26 +745,26 @@ setInterval(function () {
             } else if (playerList[key].playerNumber == 4) {
                 // clamp the paddle position to the play area
                 let paddleY, paddleX;
-                if (playerList[key].contrPosR.y + playerPaddleSize.h / 2 > playCubeSize.y) {
-                    paddleY = playCubeSize.y - playerPaddleSize.h / 2;
-                } else if (playerList[key].contrPosR.y - playerPaddleSize.h / 2 < playCubeElevation) {
-                    paddleY = playCubeElevation + playerPaddleSize.h / 2;
+                if (playerList[key].contrPosR.y + sceneVariables.playerPaddleSize.h / 2 > sceneVariables.playCubeSize.y) {
+                    paddleY = sceneVariables.playCubeSize.y - sceneVariables.playerPaddleSize.h / 2;
+                } else if (playerList[key].contrPosR.y - sceneVariables.playerPaddleSize.h / 2 < sceneVariables.playCubeElevation) {
+                    paddleY = sceneVariables.playCubeElevation + sceneVariables.playerPaddleSize.h / 2;
                 } else {
                     paddleY = playerList[key].contrPosR.y;
                 }
-                if (playerList[key].contrPosR.x + playerPaddleSize.w / 2 > playCubeSize.x / 2) {
-                    paddleX = playCubeSize.x / 2 - playerPaddleSize.w / 2;
-                } else if (playerList[key].contrPosR.x - playerPaddleSize.w / 2 < -playCubeSize.x / 2) {
-                    paddleX = -playCubeSize.x / 2 + playerPaddleSize.w / 2;
+                if (playerList[key].contrPosR.x + sceneVariables.playerPaddleSize.w / 2 > sceneVariables.playCubeSize.x / 2) {
+                    paddleX = sceneVariables.playCubeSize.x / 2 - sceneVariables.playerPaddleSize.w / 2;
+                } else if (playerList[key].contrPosR.x - sceneVariables.playerPaddleSize.w / 2 < -sceneVariables.playCubeSize.x / 2) {
+                    paddleX = -sceneVariables.playCubeSize.x / 2 + sceneVariables.playerPaddleSize.w / 2;
                 } else {
                     paddleX = playerList[key].contrPosR.x;
                 }
                 // clamped paddle position to use for the collision and bounce calculation
-                let clampedPaddlePos = { x: paddleX, y: paddleY, z: -playCubeSize.z / 2 };
+                let clampedPaddlePos = { x: paddleX, y: paddleY, z: -sceneVariables.playCubeSize.z / 2 };
 
-                if (ball.position.z - ball.size <= -playCubeSize.z / 2 && ball.position.z > -playCubeSize.x / 2 - ball.size &&
-                    clampedPaddlePos.x - playerPaddleSize.w / 2 < ball.position.x + ball.size && ball.position.x - ball.size < clampedPaddlePos.x + playerPaddleSize.w / 2 &&
-                    clampedPaddlePos.y - playerPaddleSize.h / 2 < ball.position.y + ball.size && ball.position.y - ball.size < clampedPaddlePos.y + playerPaddleSize.h / 2) {
+                if (ball.position.z - ball.size <= -sceneVariables.playCubeSize.z / 2 && ball.position.z > -sceneVariables.playCubeSize.x / 2 - ball.size &&
+                    clampedPaddlePos.x - sceneVariables.playerPaddleSize.w / 2 < ball.position.x + ball.size && ball.position.x - ball.size < clampedPaddlePos.x + sceneVariables.playerPaddleSize.w / 2 &&
+                    clampedPaddlePos.y - sceneVariables.playerPaddleSize.h / 2 < ball.position.y + ball.size && ball.position.y - ball.size < clampedPaddlePos.y + sceneVariables.playerPaddleSize.h / 2) {
                     if (ball.velocity.z < 0) {
                         // ball.velocity.z *= -1;  // Reverse Z velocity
                         calculateBallBounce(clampedPaddlePos, playerList[key].playerNumber);
@@ -804,16 +776,15 @@ setInterval(function () {
                 }
             }
         });
-        // value for the out of bounds check
-        const outOfBoundsValue = 0.3;
+        const outOfBoundsValue = 0.3; // value for the out of bounds check
 
         // reset the ball if out of bounds
-        if (ball.position.x > playCubeSize.x / 2 + outOfBoundsValue || ball.position.x < -playCubeSize.x / 2 - outOfBoundsValue ||
-            ball.position.z > playCubeSize.z / 2 + outOfBoundsValue || ball.position.z < -playCubeSize.z / 2 - outOfBoundsValue) {
+        if (ball.position.x > sceneVariables.playCubeSize.x / 2 + outOfBoundsValue || ball.position.x < -sceneVariables.playCubeSize.x / 2 - outOfBoundsValue ||
+            ball.position.z > sceneVariables.playCubeSize.z / 2 + outOfBoundsValue || ball.position.z < -sceneVariables.playCubeSize.z / 2 - outOfBoundsValue) {
 
 
             // Reset Player points on miss --------------------------------------------------------------------------------------
-            if (ball.position.x > playCubeSize.x / 2 + outOfBoundsValue) {
+            if (ball.position.x > sceneVariables.playCubeSize.x / 2 + outOfBoundsValue) {
                 // player 1 missed
                 Object.keys(playerList).forEach((key) => {
                     if (playerList[key].playerNumber == 1) {
@@ -822,7 +793,7 @@ setInterval(function () {
                         io.emit('scoreUpdate', playerList[key].id, playerList[key].score);
                     }
                 });
-            } else if (ball.position.x < -playCubeSize.x / 2 - outOfBoundsValue) {
+            } else if (ball.position.x < -sceneVariables.playCubeSize.x / 2 - outOfBoundsValue) {
                 // player 2 missed
                 Object.keys(playerList).forEach((key) => {
                     if (playerList[key].playerNumber == 2) {
@@ -831,7 +802,7 @@ setInterval(function () {
                         io.emit('scoreUpdate', playerList[key].id, playerList[key].score);
                     }
                 });
-            } else if (ball.position.z > playCubeSize.z / 2 + outOfBoundsValue) {
+            } else if (ball.position.z > sceneVariables.playCubeSize.z / 2 + outOfBoundsValue) {
                 // player 3 missed
                 Object.keys(playerList).forEach((key) => {
                     if (playerList[key].playerNumber == 3) {
@@ -840,7 +811,7 @@ setInterval(function () {
                         io.emit('scoreUpdate', playerList[key].id, playerList[key].score);
                     }
                 });
-            } else if (ball.position.z < -playCubeSize.z / 2 - outOfBoundsValue) {
+            } else if (ball.position.z < -sceneVariables.playCubeSize.z / 2 - outOfBoundsValue) {
                 // player 4 missed
                 Object.keys(playerList).forEach((key) => {
                     if (playerList[key].playerNumber == 4) {
@@ -859,7 +830,7 @@ setInterval(function () {
 
     } else {
         // reset the ball if no player is in the game
-        if (ball.position.x != 0 && ball.position.y != (playCubeSize.y / 2) - playCubeElevation && ball.position.z != 0) {
+        if (ball.position.x != 0 && ball.position.y != (sceneVariables.playCubeSize.y / 2) - sceneVariables.playCubeElevation && ball.position.z != 0) {
             console.log('No Players in the Game, resetting Ball.');
             resetGame();
             io.emit('serverUpdate', prepareGameData(), ball.position, performance.now());
@@ -1007,11 +978,10 @@ function getNormalizedVector(vector) {
 }
 
 function resetGame() {
-    ball.position = { x: 0, y: midPointOfPlayCube, z: 0 };
+    ball.position = ballStartVariables.position;
     ball.velocity = getNormalizedVector({ x: getRandomNumber(0.5, 2), y: getRandomNumber(0.5, 1), z: getRandomNumber(0.5, 2) });
-    ball.speed = ballStartSpeed;
-    ball.color = ballStartColor;
-    // changeBallColor(ballStartColor);
+    ball.speed = ballStartVariables.speed;
+    ball.color = ballStartVariables.color;
 }
 
 function checkLeaderboard(player) {
@@ -1049,11 +1019,11 @@ function calculateBallBounce(contrRPos, playerNumber) {
 
     // define the min and max distance from the paddle center to the ball
     // for the width and height
-    let ballPaddleMinDistW = -playerPaddleSize.w / 2 - ball.size;
-    let ballPaddleMaxDistW = playerPaddleSize.w / 2 + ball.size;
+    let ballPaddleMinDistW = -sceneVariables.playerPaddleSize.w / 2 - ball.size;
+    let ballPaddleMaxDistW = sceneVariables.playerPaddleSize.w / 2 + ball.size;
 
-    let ballPaddleMinDistH = -playerPaddleSize.h / 2 - ball.size;
-    let ballPaddleMaxDistH = playerPaddleSize.h / 2 + ball.size;
+    let ballPaddleMinDistH = -sceneVariables.playerPaddleSize.h / 2 - ball.size;
+    let ballPaddleMaxDistH = sceneVariables.playerPaddleSize.h / 2 + ball.size;
 
     // define the max angle for the bounce
     // 2 = 90°, 4 = 45°, 6 = 30°, 8 = 22.5°, 9 = 20°
@@ -1180,7 +1150,7 @@ function setGameTimer() {
         timerInSeconds++;
         // console.log(`Game Timer: ${timerInSeconds}s`);
         io.emit('gameTimeUpdate', timerInSeconds);
-        if (timerInSeconds >= gameTimerTime / 1000) {
+        if (timerInSeconds >= gameTime / 1000) {
             clearInterval(gameTimer);
             gameTimer = null;
             console.log('Game Timer ended, resetting Game.');

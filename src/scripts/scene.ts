@@ -4,7 +4,7 @@ import { DirectionalLight, PointLight } from '@babylonjs/core';
 import { Mesh, StandardMaterial, Texture, Color3, Color4, Vector3, CubeTexture } from '@babylonjs/core';
 import * as GUI from '@babylonjs/gui';
 
-import { PlayerStartInfo, SceneStartInfos } from './interfaces';
+import { PlayerStartInfo, SceneVariables, BallStartVariables } from './interfaces';
 import { ghostColor } from './static-variables';
 
 
@@ -19,17 +19,17 @@ export const scene = new Scene(engine);
 export const guiTextElements: { [key: string]: GUI.TextBlock } = {};
 export const guiRectElements: { [key: string]: GUI.Rectangle } = {};
 
-export function createBasicScene(sceneStartInfos: SceneStartInfos, playerStartInfos: { [key: number]: PlayerStartInfo }) {
+export function createBasicScene(sceneVariables: SceneVariables, ballStartVariables: BallStartVariables, playerStartInfos: { [key: number]: PlayerStartInfo }) {
 
-    const playCubeSize = sceneStartInfos.playCubeSize;
-    const playCubeElevation = sceneStartInfos.playCubeElevation;
-    const playerAreaDepth = sceneStartInfos.playerAreaDepth;
-    const ballSize = sceneStartInfos.ballSize;
-    const ballStartPos = sceneStartInfos.ballStartPos;
-    const ballColor = sceneStartInfos.ballColor;
-    const calculatedCubeHeight = sceneStartInfos.calculatedCubeHeight;
-    const midPointOfPlayCube = sceneStartInfos.midPointOfPlayCube;
-    // let playerPaddleSize = sceneStartInfos.playerPaddleSize;
+    const playCubeSize = sceneVariables.playCubeSize;
+    const playCubeElevation = sceneVariables.playCubeElevation;
+    const playerAreaDepth = sceneVariables.playerAreaDepth;
+    const calculatedCubeHeight = sceneVariables.calculatedCubeHeight;
+    const midPointOfPlayCube = sceneVariables.midPointOfPlayCube;
+    const ballSize = ballStartVariables.size;
+    const ballStartPos = ballStartVariables.position;
+    const ballColor = ballStartVariables.color;
+    // let playerPaddleSize = sceneVariables.playerPaddleSize;
 
     // Camera --------------------------------------------------------------------------------------
     // Add a camera for the non-VR view in browser
