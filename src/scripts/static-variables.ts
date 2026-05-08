@@ -1,7 +1,7 @@
 export const ipAddress: string = '192.168.178.84';
 
 export const refreshRate: number = 20; // 1000 / 60; // 60 FPS
-export const autojoin: boolean = false; // if true, players can join the game by entering the game area
+export const autoJoin: boolean = false; // if true, players can join the game by entering the game area
 export const gameTimeLength: number = 300000; // in milliseconds, 5 minutes
 
 // ---------- GAME VARIABLES ----------

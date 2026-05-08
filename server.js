@@ -16,9 +16,15 @@ import { clearInterval } from "node:timers";
 import dns from "node:dns";
 import os from "node:os";
 
+// imports for server specific variables and functions
+import { refreshRate, maxPlayers, autoJoin } from "./src/scripts/static-variables.ts";
+// imports for game/scene specific variables and functions
+import { playCubeSize, playCubeElevation, playerAreaDepth, playerAreaDistance, playerPaddleSize, ballStartSpeed, ballStartColor, calculatedCubeHeight, midPointOfPlayCube } from "./src/scripts/static-variables.ts";
+
+
 const port = process.env.PORT || 3000;
 
-// getting the local ip address of the server to display it in the console for easier access from other devices in the network
+// getting the local ip address of the server
 const options = { family: 4 };
 let localIpAddress;
 
@@ -33,13 +39,12 @@ dns.lookup(os.hostname(), options, (err, addr) => {
 
 
 ////////////// CHANGE THIS TO YOUR LOCAL IP ADDRESS ///////////////////
-const ipAdress = localIpAddress; // neuer Router
+const ipAdress = localIpAddress; // set ip address automatically
 ///////////////////////////////////////////////////////////////////////
 
 const app = express();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// const httpServer = createServer(app);
 
 // Construct the absolute path for the SSL certificate files
 const keyPath = join(__dirname, 'sslcerts', 'selfsigned.key');
@@ -60,6 +65,8 @@ app.get('/', (req, res) => {
 });
 
 app.use(express.static('.'));
+
+
 
 class PlayerGameData {
     constructor(playerData) {
@@ -176,24 +183,13 @@ let connectedClientNumber = 0;
 // Server Variables
 let allConnectedIds = {}; // store all connected player ids with client types
 let serverStartTime;
-const serverRefreshRate = 5; // time between server updates in milliseconds
 let lastUpdateTime = performance.now();
 let deltaT = 0; // time since last update in milliseconds
 let deltaTMultiplier = 1; // multiplier for game values by deltaT
 
-let autoJoin = false; // if true, players can join the game by entering the game area
-
 let gameTimer = null; // timer for the game to end after a certain time
 const gameTimerTime = 300000; // in milliseconds, 5 minutes
 let timerInSeconds = 0; // timer in seconds, used for the game timer
-
-// Test Variables
-let serverUpdateCounter = 0;
-let networkTestArray = [];
-let networkTestTableArray = [];
-let networkTestArrayObject = {};
-let idToClientMatches = {};
-let testNumber = 0;
 
 // Store all connected players
 let playerList = {};
@@ -221,16 +217,6 @@ const leaderboardLength = 10; // the length of the leaderboard
 readLeaderboardFromFile();
 // let dailyLeaderboard = [];
 // const dailyLeaderboardLength = 10; // the length of the daily leaderboard
-const maxPlayers = 4;
-const playCubeSize = { x: 1.2, y: 1.9, z: 1.2 }; // the size of the player cube in meters // the y value is the top of the cube
-const playCubeElevation = 0.6; // the elevation of the player cube in meters
-const playerAreaDepth = 1; // the depth of the player area in the z direction in meters
-const playerAreaDistance = 0.2; // the distance from the player area to the wall in meters
-const playerPaddleSize = { h: 0.2, w: 0.4 }; // the size of the player plane in meters
-const ballStartSpeed = 0.01 * serverRefreshRate / 10;
-const ballStartColor = '#1f53ff';
-const calculatedCubeHeight = playCubeSize.y - playCubeElevation;
-const midPointOfPlayCube = ((playCubeSize.y - playCubeElevation) / 2) + playCubeElevation;
 
 // define the limits of the different areas for each player position
 // used to calculate if a player is in the correct area or not, and to trigger the area entered and area exit events
@@ -324,49 +310,13 @@ let playerStartInfos = {
 io.on('connection', (socket) => {
 
     console.log(`Player connected: ${socket.id}`);
-    networkTestArray.push(`Player connected: ${socket.id}`);
-    for (let id in networkTestArrayObject) {
-        if (networkTestArrayObject.hasOwnProperty(id)) {
-            networkTestArrayObject[id].networkTestArray.push(`SUC: ${serverUpdateCounter}, Player connected: ${socket.id}`);
-        }
-    }
     // !2
     socket.emit('ClientID', socket.id);
     connectedClientNumber++;
 
-    // Network Ping Pong Test //
-
-    socket.on('ServerPong', (clientServerSendTime, id, serverUpdateCounterPong) => {
-        const serverSendTime = clientServerSendTime;
-        const serverReceiveTime = performance.now();
-        const serverRoundTripTime = serverReceiveTime - serverSendTime;
-        const roundedSRTT = Math.round(serverRoundTripTime);
-        // networkTestArray.push(`${id} SRTT: ${serverRoundTripTime}, ServUpCounter: ${serverUpdateCounterPong}`);
-        networkTestArray.push(`SUC: ${serverUpdateCounterPong}, SRTT: ${roundedSRTT}ms, client: ${id}`);
-        networkTestTableArray.push({ suc: serverUpdateCounterPong, time: roundedSRTT });
-        if (networkTestArrayObject[id]) {
-            networkTestArrayObject[id].networkTestArray.push(`SUC: ${serverUpdateCounterPong}, SRTT: ${roundedSRTT}ms`);
-            networkTestArrayObject[id].networkTestTableArray.push({ suc: serverUpdateCounterPong, time: roundedSRTT });
-        }
-        // console.log(`${id} SRTT: ${serverRoundTripTime}`);
-    });
-
-    /*
-    socket.on('clientRoundTripTime', (clientRoundTripTime, id) => {
-        networkTestArray.push(`${id} CRTT: ${clientRoundTripTime}`);
-        // console.log(`${id} CRTT: ${clientRoundTripTime}`);
-    });
-    */
-
     socket.on('reportLag', (counterAtLag) => {
         console.log(`Player ${socket.id} reported lag at or before counter ${counterAtLag}`);
-        networkTestArray.push(`Player ${socket.id} reported lag at or before counter ${counterAtLag}`);
-        if (networkTestArrayObject[socket.id]) {
-            networkTestArrayObject[socket.id].networkTestArray.push(`SUC: ${serverUpdateCounter}, Lag at or before counter ${counterAtLag}`);
-        }
     });
-
-    // End Network Ping Pong Test //
 
     // !3
     socket.on('clientStartTime', (clientStartTime, typeOfClient) => {
@@ -413,8 +363,6 @@ io.on('connection', (socket) => {
         if (playerStartInfos[startPlayerNum].used == false) {
 
             const newPlayer = new Player(socket.id, playerStartInfos[startPlayerNum]);
-
-            networkTestArrayObject[socket.id] = { networkTestArray: [], networkTestTableArray: [] };
 
             clientEntersAR(newPlayer, socket);
 
@@ -489,12 +437,6 @@ io.on('connection', (socket) => {
 
         if (socket.id in playerList) {
             console.log(`Player ${socket.id} left XR.`);
-            networkTestArray.push(`Player ${socket.id} left XR.`);
-            for (let id in networkTestArrayObject) {
-                if (networkTestArrayObject.hasOwnProperty(id)) {
-                    networkTestArrayObject[id].networkTestArray.push(`SUC: ${serverUpdateCounter}, Player ${socket.id} left XR.`);
-                }
-            }
 
             if (playerList[socket.id].isPlaying) {
                 playerStartInfos[playerList[socket.id].playerNumber].used = false;
@@ -534,7 +476,6 @@ io.on('connection', (socket) => {
 
         if (socket.id in playerList) {
             console.log(`Player ${socket.id} disconnected from the game.`);
-            networkTestArray.push(`Player ${socket.id} disconnected from the game.`);
 
             if (playerList[socket.id].isPlaying) {
                 playerStartInfos[playerList[socket.id].playerNumber].used = false;
@@ -546,13 +487,6 @@ io.on('connection', (socket) => {
             delete playerList[socket.id];
         } else {
             console.log(`Player ${socket.id} disconnected from the waiting room.`);
-            networkTestArray.push(`Player ${socket.id} disconnected from the waiting room.`);
-        }
-
-        for (let id in networkTestArrayObject) {
-            if (networkTestArrayObject.hasOwnProperty(id)) {
-                networkTestArrayObject[id].networkTestArray.push(`SUC: ${serverUpdateCounter}, Player ${socket.id} disconnected.`);
-            }
         }
 
         io.emit('playerDisconnected', socket.id);
@@ -560,59 +494,6 @@ io.on('connection', (socket) => {
 
         if (playerList.length == 0) {
             resetGame();
-        }
-    });
-
-    // End the Server when a player presses the x button (should be done by the operator)
-    socket.on('collectingTests', (endType) => {
-        console.log('Collecting performance test data.');
-        networkTestArray.push('Collecting performance test data.');
-        matchIdsToClients();
-        createNewTestFolder().then(() => {
-            if (endType == 'client') {
-                io.emit('requestTestArray');
-            } else if (endType == 'network') {
-                for (let id in networkTestArrayObject) {
-                    if (networkTestArrayObject.hasOwnProperty(id)) {
-                        writeArrayToFile('network', 'SRTT', networkTestArrayObject[id].networkTestArray, false, id);
-                        writeArrayToFile('network', 'SRTT', networkTestArrayObject[id].networkTestTableArray, true, id);
-                    }
-                }
-            } else if (endType == 'all') {
-                io.emit('requestTestArray');
-                for (let id in networkTestArrayObject) {
-                    if (networkTestArrayObject.hasOwnProperty(id)) {
-                        writeArrayToFile('network', 'SRTT', networkTestArrayObject[id].networkTestArray, false, id);
-                        writeArrayToFile('network', 'SRTT', networkTestArrayObject[id].networkTestTableArray, true, id);
-                    }
-                }
-            }
-        });
-    });
-
-    socket.on('sendTestArray', (rldArray, rldTableArray, fpsTableArray) => {
-        console.log(`Received test arrays from client ${socket.id}.`);
-        // writeTestArrayToFile('client', rldArray, 'RLD', socket.id);
-        // writeArrayToTable('client', rldTableArray, 'client', socket.id);
-        // writeArrayToTable('client', fpsTableArray, 'fps', socket.id);
-
-        writeArrayToFile('client', 'RLD', rldArray, false, socket.id);
-        writeArrayToFile('client', 'RLD', rldTableArray, true, socket.id);
-        writeArrayToFile('client', 'FPS', fpsTableArray, true, socket.id);
-    });
-
-    socket.on('requestClearServerArray', (isMasterRequest) => {
-        if (isMasterRequest) {
-            networkTestArray = [];
-            networkTestTableArray = [];
-            networkTestArrayObject = {};
-            console.log('Server array cleared.');
-            networkTestArray.push('Server array cleared.');
-            for (let id in playerList) {
-                if (playerList.hasOwnProperty(id)) {
-                    networkTestArrayObject[id] = { networkTestArray: [], networkTestTableArray: [] };
-                }
-            }
         }
     });
 
@@ -640,20 +521,6 @@ io.on('connection', (socket) => {
                 if (playerList.hasOwnProperty(id)) {
                     if (playerList[id].playerNumber == requestedReloadPos) {
                         io.to(id).emit('forceReload');
-                    }
-                }
-            }
-        }
-    });
-
-    socket.on('requestClearPlayerArray', (requestedArrayPos, isMasterRequest) => {
-        if (isMasterRequest) {
-            for (let id in playerList) {
-                if (playerList.hasOwnProperty(id)) {
-                    if (playerList[id].isPlaying == true) {
-                        if (playerList[id].playerNumber == requestedArrayPos) {
-                            io.to(id).emit('clearPlayerArray');
-                        }
                     }
                 }
             }
@@ -706,7 +573,6 @@ io.on('connection', (socket) => {
 httpsServer.listen(port, ipAdress, () => {
     // console.log('Server is listening on port https://localhost:' + port);        // for localhost network
     console.log('Server is listening on port https://' + ipAdress + ':' + port);    // for local ip network
-    networkTestArray.push('Server is listening on port https://' + ipAdress + ':' + port);
     serverStartTime = Date.now();
 });
 
@@ -718,7 +584,7 @@ setInterval(function () {
     deltaT = performance.now() - lastUpdateTime;
     lastUpdateTime = performance.now();
     // console.log(`DeltaT: ${deltaT}ms`);
-    deltaTMultiplier = deltaT / serverRefreshRate;
+    deltaTMultiplier = deltaT / refreshRate;
     // console.log(`DeltaT Multiplier: ${deltaTMultiplier}`);
 
     let onePlayerPlaying = false;
@@ -982,29 +848,24 @@ setInterval(function () {
             resetGame();
         } else {
             // make the ball always a litle bit faster
-            ball.speed += 0.00001 * deltaTMultiplier * serverRefreshRate / 10;
+            ball.speed += 0.00001 * deltaTMultiplier * refreshRate / 10;
         }
-
-        // add  the counter to the ball position
-        // let ballPosCounter = { x: ball.position.x, y: ball.position.y, z: ball.position.z, counter: serverUpdateCounter };
 
     } else {
         // reset the ball if no player is in the game
         if (ball.position.x != 0 && ball.position.y != (playCubeSize.y / 2) - playCubeElevation && ball.position.z != 0) {
             console.log('No Players in the Game, resetting Ball.');
             resetGame();
-            io.emit('serverUpdate', prepareGameData(), ball.position, performance.now(), serverUpdateCounter);
-            serverUpdateCounter++;
+            io.emit('serverUpdate', prepareGameData(), ball.position, performance.now());
         }
     }
 
     // Sending the current game state to all players if there are players in XR (AR/VR)
     // the necessary data of the players and the ball
     if (Object.keys(playerList).length > 0) {
-        io.emit('serverUpdate', prepareGameData(), ball.position, performance.now(), serverUpdateCounter);
-        serverUpdateCounter++;
+        io.emit('serverUpdate', prepareGameData(), ball.position, performance.now());
     }
-}, serverRefreshRate);
+}, refreshRate);
 // }
 
 ///////////////////////// End Game loop and logic /////////////////////////////
@@ -1053,12 +914,6 @@ function clientEntersAR(newPlayer, socket) {
     socket.join('gameRoom');
 
     console.log(`Player ${newPlayer.id} entered AR on Position ${newPlayer.inPosition}.`);
-    for (let id in networkTestArrayObject) {
-        if (networkTestArrayObject.hasOwnProperty(id)) {
-            networkTestArrayObject[id].networkTestArray.push(`SUC: ${serverUpdateCounter}, Player ${newPlayer.id} entered AR on Position ${newPlayer.inPosition}.`);
-        }
-    }
-    networkTestArray.push(`SUC: ${serverUpdateCounter}, Player ${newPlayer.id} entered AR on Position ${newPlayer.inPosition}.`);
 
     // Add new player to the playerArray
     playerList[newPlayer.id] = newPlayer;
@@ -1090,7 +945,6 @@ function playerStartPlaying(socketId) {
 
     if (playerList[socketId].isPlaying) {
         console.log(`Player ${socketId} is already playing.`);
-        // networkTestArray.push(`Player ${socketId} is already playing.`);
     } else {
         if (playerStartNumber == 0) {
             io.to(socketId).emit('startPosDenied', 1);
@@ -1099,12 +953,6 @@ function playerStartPlaying(socketId) {
                 playerStartInfos[playerStartNumber].used = true;
 
                 console.log(`Player ${socketId} started playing as Player ${playerStartNumber}.`);
-                networkTestArray.push(`Player ${socketId} started playing as Player ${playerStartNumber}.`);
-                for (let id in networkTestArrayObject) {
-                    if (networkTestArrayObject.hasOwnProperty(id)) {
-                        networkTestArrayObject[id].networkTestArray.push(`SUC: ${serverUpdateCounter}, Player ${socketId} started playing as Player ${playerStartNumber}.`);
-                    }
-                }
 
                 // set the isPlaying flag to true
                 playerList[socketId].playerNumber = playerStartNumber;
@@ -1285,172 +1133,6 @@ function ballBounce(playerNumber, isPaddle) {
         // ball.speed += 0.0001 * deltaTMultiplier;
     }
     io.emit('ballBounce', playerNumber, isPaddle);
-}
-
-function matchIdsToClients() {
-    let clientCounter = 1;
-    for (let id in networkTestArrayObject) {
-        if (networkTestArrayObject.hasOwnProperty(id)) {
-            idToClientMatches[id] = clientCounter;
-            clientCounter++;
-        }
-    }
-    // Object.keys(playerList).forEach((key) => {
-    //     idToClientMatches[key] = clientCounter;
-    //     clientCounter++;
-    // });
-}
-
-function createNewTestFolder() {
-    const testFolderPath = join(__dirname, 'other_files', 'performance_tests');
-
-    return new Promise((resolve, reject) => {
-        // Read the contents of the performance_tests folder
-        fs.readdir(testFolderPath, { withFileTypes: true }, (err, entries) => {
-            if (err) {
-                console.error('Error reading performance_tests directory:', err);
-                return reject(err);
-            }
-
-            // Filter for directories matching the naming convention "test_<number>"
-            const testFolders = entries
-                .filter(entry => entry.isDirectory() && /^test_\d+$/.test(entry.name))
-                .map(entry => entry.name);
-
-            let maxTestNumber = 0;
-
-            // Extract the test numbers and find the highest one
-            testFolders.forEach(folder => {
-                const match = folder.match(/^test_(\d+)$/);
-                if (match) {
-                    const testNumber = parseInt(match[1], 10);
-                    if (testNumber > maxTestNumber) {
-                        maxTestNumber = testNumber;
-                    }
-                }
-            });
-
-            // Determine the next test number
-            const nextTestNumber = maxTestNumber + 1;
-            const newTestFolder = join(testFolderPath, `test_${nextTestNumber}`);
-
-            testNumber = nextTestNumber;
-
-            // Create the new test folder
-            fs.mkdir(newTestFolder, { recursive: true }, (err) => {
-                if (err) {
-                    console.error('Error creating new test folder:', err);
-                    return reject(err);
-                }
-
-                console.log(`Created new test folder: ${newTestFolder}`);
-
-                const networkFolder = join(newTestFolder, 'network');
-                const clientFolder = join(newTestFolder, 'client');
-
-                fs.mkdir(networkFolder, { recursive: true }, (err) => {
-                    if (err) {
-                        console.error('Error creating new test folder:', err);
-                        return reject(err);
-                    }
-
-                    fs.mkdir(clientFolder, { recursive: true }, (err) => {
-                        if (err) {
-                            console.error('Error creating new test folder:', err);
-                            return reject(err);
-                        }
-
-                        console.log(`Created all new test folders for test: ${testNumber}`);
-                        resolve(newTestFolder)
-                    });
-                });
-            });
-        });
-    });
-}
-
-function writeArrayToFile(testCategory, testType, testArray, isTable, socketId = '') {
-    // console.log('Writing test results to file');
-
-    if (isTable == true) {
-        if (!testArray || !Array.isArray(testArray)) {
-            console.log('serverUpdateData is not an array or is undefined');
-        }
-    }
-
-    let clientNumber = 0;
-    if (socketId != '') {
-        clientNumber = idToClientMatches[socketId];
-    }
-
-    let content = '';
-    let testFolderPath = '';
-    let testFilePath = '';
-    // let nextTestNumber = 0;
-    // let maxTestNumber = 0;
-
-    if (testCategory == 'client') {
-        testFolderPath = join(__dirname, 'other_files', 'performance_tests', 'test_' + testNumber, 'client');
-    } else if (testCategory == 'network') {
-        testFolderPath = join(__dirname, 'other_files', 'performance_tests', 'test_' + testNumber, 'network');
-    }
-
-    // check if the folder exists and count the files in it
-    // then create the next test file with the next number
-    // fs.readdir(testFolderPath, (err, files) => {
-    //     if (err) {
-    //         console.error('Error reading directory', err);
-    //     } else {
-
-    //         if (files.length == 0) {
-    //             nextTestNumber = 1;
-    //         } else {
-    //             files.forEach(file => {
-    //                 const regex = new RegExp(`${testCategory}_test(\\d+)`);
-    //                 const match = file.match(regex);
-    //                 if (match) {
-    //                     const testNumber = parseInt(match[1], 10);
-    //                     if (testNumber > maxTestNumber) {
-    //                         maxTestNumber = testNumber;
-    //                     }
-    //                 }
-    //             });
-    //         }
-    //     }
-    //     nextTestNumber = maxTestNumber + 1;
-
-    // testFolderPath = join(__dirname, 'other_files', 'performance_tests', 'test_' + testNumber);
-
-    if (isTable == true) {
-        testFilePath = join(testFolderPath, `${testCategory}_test_${testNumber}_${testType}_table_c${clientNumber}.csv`);
-
-        content = `SUC,${testType}\n`;
-        testArray.forEach(entry => {
-            content += `${entry.suc},${entry.time}\n`;
-        });
-    } else if (isTable == false) {
-        testFilePath = join(testFolderPath, `${testCategory}_test_${testNumber}_${testType}_c${clientNumber}.txt`);
-
-        let currentDate = new Date();
-
-        let headerContent = `Performance Test ${testNumber}\nTest Category: ${testCategory}\nTest Type: ${testType}\nDate: ${currentDate}\nSocket ID: ${socketId}\nDevice: ?\n\n`;
-        const arrayContent = testArray.join('\n');
-        content = join(headerContent, arrayContent);
-    }
-
-    fs.writeFile(testFilePath, content, { flag: 'w' }, (err) => {
-        if (err) {
-            console.error('Error writing to file', err);
-        } else {
-
-            if (isTable == true) {
-                console.log(`${testCategory}-${testType}-test-${testNumber} results written to csv file`);
-            } else if (isTable == false) {
-                console.log(`${testCategory}-${testType}-test-${testNumber} results written to txt file`);
-            }
-        }
-    });
-    // });
 }
 
 function readLeaderboardFromFile() {

@@ -34,7 +34,6 @@ let isVRMode: boolean = true;
 let autoJoinClient: boolean = false; //gets overritten by the server in the current state
 
 let gameTimerTimeClient: number = 0; // game timer time in seconds
-let gameTime: number = 0; // game time in seconds
 
 let playerList: { [key: string]: Player } = {};
 let previousPlayer: PreviousPlayerData | null = null;
@@ -65,17 +64,6 @@ for (let i = 1; i <= 4; i++) {
     let startbutton = document.getElementById(`startPos-${i}`);
     startButtons[i] = startbutton as HTMLButtonElement;
 }
-
-// Test Variables
-let serverUpdateCounter = 0;
-let oldServerUpdateCounter = 0;
-let clientTestArray: string[] = [];
-let updateCounterArray: number[] = [];
-let renderLoopTableArray: { suc: number; time: number }[] = [];
-
-let fpsOldTime = 0;
-let fpsNewTime = 0;
-let fpsTableArray: { suc: number; time: number }[] = [];
 
 ////////////////////////////// CREATE BABYLON SCENE ETC. //////////////////////////////
 
@@ -427,80 +415,23 @@ window.addEventListener('resize', function () {
 socket.on('connect', () => {
     socket.emit('clientStartTime', clientStartTime, 'player');
     // console.log('Previous Player Data: ', previousPlayer);
-    clientTestArray.push(`----------Client Connected----------`);
 });
 
 // !2
 socket.on('ClientID', (id) => {
     console.log('This Client ID: ', id);
-    clientTestArray.push(`----------This Client ID: ${id} ----------`);
 });
 
 // !3
 socket.on('forceReload', () => {
     console.log('Server requested reload');
-    clientTestArray.push(`----------Server requested reload----------`);
     xr.baseExperience.exitXRAsync();
     window.location.reload();
 });
 
-// set the prevoius player to available
-/*socket.on('timeForPreviousPlayers', () => {
-    if (previousPlayer != null) {
-        let timeDiffPreviousPlayer = clientStartTime - previousPlayer.playerTime;
-
-        console.log('Time Difference to Previous Player: ', timeDiffPreviousPlayer);
-
-        if (timeDiffPreviousPlayer < 30000) {
-            console.log(`Previous Player ${previousPlayer.playerNumber} found.`);
-
-            if (continueAsPreviousPlayer) {
-                continueAsPreviousPlayer.style.display = 'block';
-                continueAsPreviousPlayer.innerHTML = `Continue as Player ${previousPlayer.playerNumber} <span id="btn-arrow-pre"></span>`;
-                continueAsPreviousPlayer.style.setProperty('border-color', previousPlayer.color);
-                continueAsPreviousPlayer.style.setProperty('color', previousPlayer.color);
-                continueAsPreviousPlayer.style.setProperty('box-shadow', `0 0 15px ${previousPlayer.color}50, 0 0 30px ${previousPlayer.color}50, inset 0 0 10px ${previousPlayer.color}50`);
-                continueAsPreviousPlayer.style.setProperty('text-shadow', `0 0 10px ${previousPlayer.color}, 0 0 20px ${previousPlayer.color}`);
-                // set the color of the button arrow
-                let buttonArrow = document.getElementById(`btn-arrow-pre`);
-                if (buttonArrow) {
-                    buttonArrow.style.setProperty('border-color', previousPlayer.color);
-                }
-
-                // click event listener for the continue as previous player button
-                continueAsPreviousPlayer.addEventListener('click', () => {
-                    console.log('Pressed continue as Previous Player');
-                    socket.emit('continueAsPreviousPlayer', previousPlayer);
-                });
-
-                // mouse over effect for the continue as previous player button
-                continueAsPreviousPlayer.addEventListener('mouseover', () => {
-                    if (previousPlayer) {
-                        handleMouseOver(previousPlayer.playerNumber, true);
-                    }
-                });
-
-                // mouse out effect for the continue as previous player button
-                continueAsPreviousPlayer.addEventListener('mouseout', () => {
-                    if (previousPlayer) {
-                        handleMouseOut(previousPlayer.playerNumber, true);
-                    }
-                });
-
-            }
-        } else {
-            console.log('Previous Player found, but too late.');
-            localStorage.removeItem('player');
-        }
-    } else {
-        console.log('No Previous Player found.');
-    }
-});*/
-
 // !4
 socket.on('joinedWaitingRoom', () => {
     console.log(`You joined the waiting Room. Enter VR to join the Game.`);
-    clientTestArray.push(`----------Client joined Waiting Room----------`);
 
     if (loadingScreen) {
         loadingScreen.style.display = 'none';
@@ -522,8 +453,6 @@ socket.on('startPosDenied', (errorCode) => {
 // and spawning all current players except yourself
 socket.on('currentState', (players: { [key: string]: Player }, ballColor: string,
     playerStartInfosServer: { [key: number]: PlayerStartInfo }, sceneStartInfosServer: SceneStartInfos, autoJoin: boolean, gameTimerTime: number) => {
-
-    clientTestArray.push(`----------Client received currentState----------`);
 
     autoJoinClient = autoJoin;
     gameTimerTimeClient = gameTimerTime;
@@ -567,7 +496,6 @@ socket.on('currentState', (players: { [key: string]: Player }, ballColor: string
 
 // !6
 socket.on('clientEntersAR', (newSocketPlayer, areaEnteredTimerTime) => {
-    clientTestArray.push(`----------Client enters AR----------`);
 
     startScreen?.style.setProperty('display', 'none');
 
@@ -661,8 +589,6 @@ socket.on('clientEntersAR', (newSocketPlayer, areaEnteredTimerTime) => {
                         if (xbuttonComponent.pressed) {
                             // for testing to report a lag
                             console.log('Send Lag report');
-                            socket.emit('reportLag', serverUpdateCounter);
-                            clientTestArray.push(`----------Report a Lag at or before Counter: ${serverUpdateCounter}----------`);
                         }
                     });
 
@@ -671,8 +597,6 @@ socket.on('clientEntersAR', (newSocketPlayer, areaEnteredTimerTime) => {
                         if (ybuttonComponent.pressed) {
                             // for testing to report a lag
                             console.log('Send Lag report');
-                            socket.emit('reportLag', serverUpdateCounter);
-                            clientTestArray.push(`----------Report a Lag at or before Counter: ${serverUpdateCounter}----------`);
                         }
                     });
                 }
@@ -789,7 +713,6 @@ socket.on('recenterXR', () => {
 
 // when the current player is already on the server and a new player joins
 socket.on('newPlayer', (newPlayer) => {
-    clientTestArray.push(`----------New Player joined: ${newPlayer.id}----------`);
     // console log about new player joined
     console.log('New player joined: ', newPlayer.id);
 
@@ -813,7 +736,6 @@ socket.on('newPlayer', (newPlayer) => {
 // when the client is on the server and a new player starts playing
 // can be the client itself (if in ar)
 socket.on('playerStartPlaying', (newPlayerId, startPlayingNumber) => {
-    clientTestArray.push(`----------Player started playing: ${newPlayerId} as ${startPlayingNumber}----------`);
     console.log('Player started playing: ', newPlayerId, ' as ', startPlayingNumber);
 
     playerList[newPlayerId].isPlaying = true;
@@ -873,7 +795,7 @@ socket.on('playerStartPlaying', (newPlayerId, startPlayingNumber) => {
 });
 
 // update the players position and rotation from the server
-socket.on('serverUpdate', (playerGameDataList, ballPosition, serverSendTime, serverUpdateCounterServer) => {
+socket.on('serverUpdate', (playerGameDataList, ballPosition) => {
     Object.keys(playerGameDataList).forEach((id) => {
         if (playerList[id]) {
             // set the new data from the server to the player
@@ -882,21 +804,8 @@ socket.on('serverUpdate', (playerGameDataList, ballPosition, serverSendTime, ser
             playerList[id].updateObj();
         }
     });
-    // console.log('Server Update Counter: ', serverUpdateCounter);
-
-    serverUpdateCounter = serverUpdateCounterServer;
-    // save the time when the client recieved the server update
-    // pair it with the server update counter to store the specific update with the recivied time
-    updateCounterArray[serverUpdateCounter] = performance.now();
 
     updateBall(ballPosition);
-
-    // send the pong back to the server to calculate the ServerRoundTrip Time
-    socket.emit('ServerPong', serverSendTime, socket.id, serverUpdateCounter);
-});
-
-socket.on('gameTimeUpdate', (gameTimerInSeconds) => {
-    gameTime = gameTimerInSeconds;
 });
 
 // recieve a score update from the server
@@ -1202,7 +1111,6 @@ socket.on('playerExitGame', (playerId) => {
     const exitPlayer = playerList[playerId];
     if (exitPlayer) {
         console.log(`Player ${exitPlayer.playerNumber} left the game.`);
-        clientTestArray.push(`----------Player ${exitPlayer.playerNumber} left the game.----------`);
 
         let playerWall = scene.getMeshByName(`player${exitPlayer.playerNumber}Wall`) as Mesh;
         if (playerWall) {
@@ -1264,7 +1172,6 @@ socket.on('playerDisconnected', (id) => {
     const disconnectedPlayer = playerList[id];
     if (disconnectedPlayer) {
         console.log('Player disconnected: ', id);
-        clientTestArray.push(`----------Player ${disconnectedPlayer.playerNumber} disconnected.----------`);
         disconnectedPlayer.headObj?.dispose();
         disconnectedPlayer.controllerR?.dispose();
         disconnectedPlayer.controllerL?.dispose();
@@ -1442,40 +1349,6 @@ function resetSceneToHTML() {
 ////////////////////////// RENDER LOOP //////////////////////////////
 // Register a render loop to repeatedly render the scene
 engine.runRenderLoop(function () {
-    // if (divFps) {
-    //     divFps.innerHTML = engine.getFps().toFixed() + ' fps';
-    // }
-    /*Object.keys(playerList).forEach((id) => {
-        if (playerList[id]) {
-            playerList[id].updateObj();
-        }
-    });*/
-
-    if (serverUpdateCounter > 0) {
-
-        // calculate the time difference between the client recieving the server update and teh client showing the update
-        // this is the time it takes for the client to process the server update and show it on the screen
-        if (oldServerUpdateCounter != serverUpdateCounter) {
-            const renderLoopTime = performance.now();
-            const deltaRenderLoopTime = renderLoopTime - updateCounterArray[serverUpdateCounter];
-            const roundedDRLT = Math.round(deltaRenderLoopTime);
-
-            // console.log('Server Update Counter: ', serverUpdateCounter);
-            // clientTestArray.push(`Server Update Counter: ${serverUpdateCounter}`);
-            clientTestArray.push(`SUC: ${serverUpdateCounter}, Delay: ${roundedDRLT}ms`);
-            renderLoopTableArray.push({ suc: serverUpdateCounter, time: roundedDRLT });
-
-        }
-        oldServerUpdateCounter = serverUpdateCounter;
-
-        // calculate the fps
-        fpsNewTime = performance.now();
-        const fps = Math.round(fpsNewTime - fpsOldTime);
-        fpsTableArray.push({ suc: serverUpdateCounter, time: fps });
-
-        fpsOldTime = fpsNewTime;
-    }
-
     scene.render();
 });
 
@@ -1718,67 +1591,3 @@ function getLocalStorage() {
     }
 }
 /////////////////////////// END LOCAL STORAGE //////////////////////////////
-
-///////////////////////////// TESTING GROUND ////////////////////////////
-
-window.addEventListener('keydown', function (event) {
-    // Check if the key combination is Ctrl + I
-    /*if (event.ctrlKey && event.key === 'i') {
-        if (Inspector.IsVisible) {
-            Inspector.Hide();
-        } else {
-            Inspector.Show(scene, {
-                embedMode: true,
-            });
-        }
-    }*/
-
-    // add an event listener for ending the server und get the test results
-    // c: client, n: network, x: end server without test results
-    // if (event.key === 'x') {
-    //     socket.emit('collectingTests', 'shutdown');
-    // }
-    if (event.key === 'c') {
-        socket.emit('collectingTests', 'client');
-    }
-    if (event.key === 'n') {
-        socket.emit('collectingTests', 'network');
-    }
-    if (event.key === 'a') {
-        socket.emit('collectingTests', 'all');
-    }
-});
-
-socket.on('requestTestArray', () => {
-    // for (let i = 0; i < updateCounterArray.length; i++) {
-    //     if (updateCounterArray[i] == undefined) {
-    //         clientTestArray.push(`SUC: ${i}, ERROR: Serverupdate not recieved`);
-    //     }
-    // }
-    const testArrayToSend = clientTestArray;
-    const rldTestArrayToSend = renderLoopTableArray;
-    const fpsTestArrayToSend = fpsTableArray;
-    socket.emit('sendTestArray', testArrayToSend, rldTestArrayToSend, fpsTestArrayToSend);
-    console.log('Test Array sent to Server');
-    // clientTestArray = [];
-});
-
-socket.on('clearPlayerArray', () => {
-    console.log('Clearing Player Array');
-    playerList = {};
-    clientTestArray = [];
-    renderLoopTableArray = [];
-    fpsTableArray = [];
-
-    clientTestArray.push('------Player Arrays cleared------');
-});
-
-/*socket.on('clientPong', (serverClientSendTime) => {
-    const clientSendTime = serverClientSendTime;
-    const clientReceiveTime = Date.now();
-    const clientRoundTripTime = clientReceiveTime - clientSendTime;
-    // console.log('Client Round Trip Time: ', clientRoundTripTime);
-    socket.emit('clientRoundTripTime', clientRoundTripTime, socket.id);
-});*/
-
-////////////////////////// END TESTING GROUND ////////////////////////////// 
