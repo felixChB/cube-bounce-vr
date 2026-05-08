@@ -16,6 +16,8 @@ export const ballStartColor: string = '#1f53ff';
 export const calculatedCubeHeight: number = playCubeSize.y - playCubeElevation;
 export const midPointOfPlayCube: number = ((playCubeSize.y - playCubeElevation) / 2) + playCubeElevation;
 
+export const ghostColor = '#bdbdbd';
+
 export let ball = {
     position: { x: 0, y: midPointOfPlayCube, z: 0 },
     velocity: { x: 0, y: 0, z: 0 },
