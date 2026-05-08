@@ -580,8 +580,6 @@ io.on('connection', (socket) => {
 httpsServer.listen(port, ipAdress, () => {
     // console.log('Server is listening on port https://localhost:' + port);        // for localhost network
     console.log('Server is listening on port https://' + ipAdress + ':' + port);    // for local ip network
-    networkTestArray.push('Server is listening on port https://' + ipAdress + ':' + port);
-    // serverStartTime = Date.now();
 });
 
 ///////////////////////// Game loop and logic /////////////////////////////
