@@ -28,7 +28,7 @@ git clone https://github.com/felixChB/WebXRBabylonIO.git
 3. in git bash navigate to the main folder
 4. to create the self-signed certificate and key, run the following command:
 ```bash
-openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout sslcerts/selfsigned.key -out sslcerts/selfsigned.cert
+mkdir -p sslcerts && openssl req -x509 -sha256 -nodes -days 365 -subj "/C=XX/ST=Local/L=Local/O=cube-bounce-vr/CN=localhost" -newkey rsa:4096 -keyout sslcerts/selfsigned.key -out sslcerts/selfsigned.cert
 ```
 
 ### Install dependencies
