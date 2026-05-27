@@ -8,8 +8,8 @@ import * as GUI from '@babylonjs/gui';
 
 import { PlayerStartInfo, PlayerGameData, PlayerData, PreviousPlayerData } from '../shared/interfaces';
 import { sceneVariables, ballStartVariables, ghostColor } from '../shared/config';
-import { scene, engine, createBasicScene } from './scene';
-import { guiTextElements, guiRectElements } from './scene';
+import { scene, engine, createBasicScene } from './scene/scene';
+import { guiTextElements, guiRectElements } from './scene/scene';
 
 //import '@babylonjs/core/Materials/Textures/Loaders'; // Required for EnvironmentHelper
 import '@babylonjs/loaders/glTF'; // Enable GLTF/GLB loader for loading controller models from WebXR Input registry

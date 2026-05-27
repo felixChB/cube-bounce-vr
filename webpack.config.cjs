@@ -2,11 +2,11 @@ const { watch } = require('fs');
 const path = require('path');
 
 module.exports = {
-    entry: './src/scripts/index.ts',
+    entry: './src/client/index.ts',
     entry: {
-        client: './src/scripts/index.ts',
-        monitor: { import: './src/scripts/monitor.ts', filename: 'monitor.js' },
-        leaderboard: { import: './src/scripts/leaderboard.ts', filename: 'leaderboard.js' },
+        client: './src/client/index.ts',
+        monitor: { import: './src/monitor/monitor.ts', filename: 'monitor.js' },
+        leaderboard: { import: './src/leaderboard/leaderboard.ts', filename: 'leaderboard.js' },
     },
     mode: 'development',
     devtool: 'inline-source-map',

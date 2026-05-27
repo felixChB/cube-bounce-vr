@@ -11,7 +11,7 @@ import '@babylonjs/loaders/glTF'; // Enable GLTF/GLB loader for loading controll
 
 import { PlayerStartInfo, SceneStartInfos, PlayerGameData, PlayerData } from '../shared/interfaces';
 import { ghostColor } from '../shared/config';
-import { scene, engine, createBasicScene } from './scene';
+import { scene, engine, createBasicScene } from '../client/scene/scene';
 
 import { Inspector } from '@babylonjs/inspector';
 
