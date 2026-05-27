@@ -6,8 +6,8 @@ import { Mesh, StandardMaterial, Color3, Vector3, Quaternion } from '@babylonjs/
 import { WebXRDefaultExperience, WebXRInputSource } from '@babylonjs/core/XR';
 import * as GUI from '@babylonjs/gui';
 
-import { PlayerStartInfo, PlayerGameData, PlayerData, PreviousPlayerData } from './interfaces';
-import { sceneVariables, ballStartVariables, ghostColor } from './static-variables';
+import { PlayerStartInfo, PlayerGameData, PlayerData, PreviousPlayerData } from '../shared/interfaces';
+import { sceneVariables, ballStartVariables, ghostColor } from '../shared/config';
 import { scene, engine, createBasicScene } from './scene';
 import { guiTextElements, guiRectElements } from './scene';
 

@@ -4,8 +4,8 @@ import { DirectionalLight, PointLight } from '@babylonjs/core';
 import { Mesh, StandardMaterial, Texture, Color3, Color4, Vector3, CubeTexture } from '@babylonjs/core';
 import * as GUI from '@babylonjs/gui';
 
-import { PlayerStartInfo, SceneVariables, BallStartVariables } from './interfaces';
-import { ghostColor } from './static-variables';
+import { PlayerStartInfo, SceneVariables, BallStartVariables } from '../shared/interfaces';
+import { ghostColor } from '../shared/config';
 
 
 export const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;

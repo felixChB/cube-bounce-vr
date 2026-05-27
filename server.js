@@ -17,9 +17,11 @@ import dns from "node:dns";
 import os from "node:os";
 
 // imports for server specific variables and functions
-import { refreshRate, maxPlayers, autoJoin, ghostColor } from "./src/scripts/static-variables.ts";
+import { refreshRate, maxPlayers, autoJoin, ghostColor } from "./src/shared/config.ts";
 // imports for game/scene specific variables and functions
-import { sceneVariables, ballStartVariables } from "./src/scripts/static-variables.ts";
+import { sceneVariables, ballStartVariables } from "./src/shared/config.ts";
+// import general utility functions
+import { getRandomNumber, getNormalizedVector } from "./src/shared/utils/math.ts";
 
 
 const port = process.env.PORT || 3000;
@@ -967,15 +969,16 @@ function playerExitsGame(playerId) {
     }
 }
 
-function getRandomNumber(min, max) {
-    const num = Math.random() * (max - min) + min;
-    return Math.random() < 0.5 ? num : -num;
-}
 
-function getNormalizedVector(vector) {
-    const length = Math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
-    return { x: vector.x / length, y: vector.y / length, z: vector.z / length };
-}
+// function getRandomNumber(min, max) {
+//     const num = Math.random() * (max - min) + min;
+//     return Math.random() < 0.5 ? num : -num;
+// }
+
+// function getNormalizedVector(vector) {
+//     const length = Math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
+//     return { x: vector.x / length, y: vector.y / length, z: vector.z / length };
+// }
 
 function resetGame() {
     ball.position = ballStartVariables.position;

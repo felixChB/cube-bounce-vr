@@ -9,8 +9,8 @@ import * as GUI from '@babylonjs/gui';
 //import '@babylonjs/core/Materials/Textures/Loaders'; // Required for EnvironmentHelper
 import '@babylonjs/loaders/glTF'; // Enable GLTF/GLB loader for loading controller models from WebXR Input registry
 
-import { PlayerStartInfo, SceneStartInfos, PlayerGameData, PlayerData } from './interfaces';
-import { ghostColor } from './static-variables';
+import { PlayerStartInfo, SceneStartInfos, PlayerGameData, PlayerData } from '../shared/interfaces';
+import { ghostColor } from '../shared/config';
 import { scene, engine, createBasicScene } from './scene';
 
 import { Inspector } from '@babylonjs/inspector';
