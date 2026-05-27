@@ -41,7 +41,7 @@
   },
   "include": [
     "src"
-  ],
+, "server.js"  ],
   "exclude": [
     "node_modules"
   ]
