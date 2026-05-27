@@ -592,7 +592,7 @@ setInterval(function () {
     // if there are players in the game
     if (onePlayerPlaying) {
         // Update the ball position
-        console.log(`Ball position before update: x=${ball.position.x.toFixed(2)}, y=${ball.position.y.toFixed(2)}, z=${ball.position.z.toFixed(2)}`);
+        // console.log(`Ball position before update: x=${ball.position.x.toFixed(2)}, y=${ball.position.y.toFixed(2)}, z=${ball.position.z.toFixed(2)}`);
         ball.position.x += ball.velocity.x * ball.speed * deltaTMultiplier;
         ball.position.y += ball.velocity.y * ball.speed * deltaTMultiplier;
         ball.position.z += ball.velocity.z * ball.speed * deltaTMultiplier;
@@ -981,6 +981,7 @@ function playerExitsGame(playerId) {
 // }
 
 function resetGame() {
+    console.log('Resetting the game and ball.');
     ball.position = ballStartVariables.position;
     ball.velocity = getNormalizedVector({ x: getRandomNumber(0.5, 2), y: getRandomNumber(0.5, 1), z: getRandomNumber(0.5, 2) });
     ball.speed = ballStartVariables.speed;
