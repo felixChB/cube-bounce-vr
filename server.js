@@ -1512,9 +1512,7 @@ function setGameTimer() {
 
                 // 7. Reset the players and their scores
                 for (let id in playerList) {
-                    if (playerList[id].isPlaying == true) {
-                        resetPlayerAfterGameTimer(id);
-                    }
+                    resetPlayerAfterGameTimer(id);
                 }
             }, 10000); // Show the game results for 10 seconds
         }
@@ -1560,11 +1558,13 @@ function exitPlayerAfterGameTimer(playerId) {
 
 function resetPlayerAfterGameTimer(playerId) {
     console.log(`Resetting Player ${playerId} after Game Timer ended.`);
-    playerStartInfos[playerList[playerId].playerNumber].used = false;
+    if (playerList[playerId].playerNumber != 0) {
+        playerStartInfos[playerList[playerId].playerNumber].used = false;
 
-    if (areaExitTimerList[playerList[playerId].playerNumber] != null) {
-        clearTimeout(areaExitTimerList[playerList[playerId].playerNumber]);
-        areaExitTimerList[playerList[playerId].playerNumber] = null;
+        if (areaExitTimerList[playerList[playerId].playerNumber] != null) {
+            clearTimeout(areaExitTimerList[playerList[playerId].playerNumber]);
+            areaExitTimerList[playerList[playerId].playerNumber] = null;
+        }
     }
 
     playerList[playerId].isPlaying = false; // safety first reset it again
