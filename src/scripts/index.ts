@@ -351,44 +351,24 @@ function createBasicScene(sceneStartInfos: SceneStartInfos, playerStartInfos: { 
     player1Mat.alpha = 0.2;
     player1Mat.disableLighting = true;
     player1Mat.backFaceCulling = false;
-    var player1PaddleMat = new PBRMaterial(`player1_paddle_mat`, scene);
-    player1PaddleMat.emissiveColor = Color3.FromHexString(playerStartInfos[1].color);
-    player1PaddleMat.alpha = 0.2;
-    player1PaddleMat.disableLighting = true;
-    player1PaddleMat.backFaceCulling = false;
 
     var player2Mat = new PBRMaterial(`player2_mat`, scene);
     player2Mat.emissiveColor = Color3.FromHexString(playerStartInfos[2].color);
     player2Mat.alpha = 0.2;
     player2Mat.disableLighting = true;
     player2Mat.backFaceCulling = false;
-    var player2PaddleMat = new PBRMaterial(`player2_paddle_mat`, scene);
-    player2PaddleMat.emissiveColor = Color3.FromHexString(playerStartInfos[2].color);
-    player2PaddleMat.alpha = 0.2;
-    player2PaddleMat.disableLighting = true;
-    player2PaddleMat.backFaceCulling = false;
 
     var player3Mat = new PBRMaterial(`player3_mat`, scene);
     player3Mat.emissiveColor = Color3.FromHexString(playerStartInfos[3].color);
     player3Mat.alpha = 0.2;
     player3Mat.disableLighting = true;
     player3Mat.backFaceCulling = false;
-    var player3PaddleMat = new PBRMaterial(`player3_paddle_mat`, scene);
-    player3PaddleMat.emissiveColor = Color3.FromHexString(playerStartInfos[3].color);
-    player3PaddleMat.alpha = 0.2;
-    player3PaddleMat.disableLighting = true;
-    player3PaddleMat.backFaceCulling = false;
 
     var player4Mat = new PBRMaterial(`player4_mat`, scene);
     player4Mat.emissiveColor = Color3.FromHexString(playerStartInfos[4].color);
     player4Mat.alpha = 0.2;
     player4Mat.disableLighting = true;
     player4Mat.backFaceCulling = false;
-    var player4PaddleMat = new PBRMaterial(`player4_paddle_mat`, scene);
-    player4PaddleMat.emissiveColor = Color3.FromHexString(playerStartInfos[4].color);
-    player4PaddleMat.alpha = 0.2;
-    player4PaddleMat.disableLighting = true;
-    player4PaddleMat.backFaceCulling = false;
 
     // Setting Materials
     ground.material = wireframeMat;
@@ -1512,7 +1492,6 @@ function addPlayerGameUtils(player: Player, isPlayer: boolean) {
     }
     // player.paddle.position = new Vector3(player.contrPosR.x, player.contrPosR.y, player.contrPosR.z);
     player.paddle.material = scene.getMaterialByName(`player0_mat`) as PBRMaterial;
-    // player.paddle.material = scene.getMaterialByName(`player_${player.id}_paddle_mat`) as PBRMaterial;
     player.paddle.isVisible = false;
 
     // add a light to the paddle
@@ -1569,7 +1548,7 @@ function addPlayerGameUtils(player: Player, isPlayer: boolean) {
 function showPlayerGameUtils(playerId: string) {
     console.log(`Showing Player Game Utils of Player: ${playerId}`);
     if (playerList[playerId].paddle) {
-        playerList[playerId].paddle.material = scene.getMaterialByName(`player${playerList[playerId].playerNumber}_paddle_mat`) as PBRMaterial;
+        playerList[playerId].paddle.material = scene.getMaterialByName(`player${playerList[playerId].playerNumber}_mat`) as PBRMaterial;
         playerList[playerId].paddle.isVisible = true;
     }
     if (playerList[playerId].paddleLight) {
