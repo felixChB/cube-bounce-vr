@@ -517,9 +517,10 @@ class Player implements PlayerData {
     paddle?: Mesh | null;
     scoreMesh?: Mesh | null;
     paddleLight?: PointLight | null;
+    finalScoreMesh?: Mesh | null;
     //HUDMesh?: Mesh | null;
 
-    constructor(player: PlayerData, headObj?: Mesh, controllerR?: Mesh, controllerL?: Mesh, paddle?: Mesh, scoreMesh?: Mesh, paddleLight?: PointLight) {
+    constructor(player: PlayerData, headObj?: Mesh, controllerR?: Mesh, controllerL?: Mesh, paddle?: Mesh, scoreMesh?: Mesh, paddleLight?: PointLight, finalScoreMesh?: Mesh) {
         this.id = player.id;
         this.color = player.color;
         this.playerNumber = player.playerNumber;
@@ -538,6 +539,7 @@ class Player implements PlayerData {
         this.paddle = paddle || null;
         this.scoreMesh = scoreMesh || null;
         this.paddleLight = paddleLight || null;
+        this.finalScoreMesh = finalScoreMesh || null;
         //this.HUDMesh = HUDMesh || null;
     }
 
@@ -1246,7 +1248,7 @@ socket.on('playerStartPlaying', (newPlayerId, startPlayingNumber) => {
     playerList[newPlayerId].playerNumber = startPlayingNumber;
 
     // set the material of the player to a player material
-    changePlayerColor(newPlayerId);
+    changePlayerColor(newPlayerId, startPlayingNumber);
     showPlayerGameUtils(playerList[newPlayerId].id);
 
     if (newPlayerId == clientID) {
@@ -1354,10 +1356,10 @@ socket.on('inPosChange', (playerId, newInPos) => {
     }
 });
 
-function changePlayerColor(playerId: string) {
-    (playerList[playerId].headObj as Mesh).material = scene.getMaterialByName(`player${playerList[playerId].playerNumber}_mat`) as PBRMaterial;
-    (playerList[playerId].controllerL as Mesh).material = scene.getMaterialByName(`player${playerList[playerId].playerNumber}_mat`) as PBRMaterial;
-    (playerList[playerId].controllerR as Mesh).material = scene.getMaterialByName(`player${playerList[playerId].playerNumber}_mat`) as PBRMaterial;
+function changePlayerColor(playerId: string, playerNumber: number) {
+    (playerList[playerId].headObj as Mesh).material = scene.getMaterialByName(`player${playerNumber}_mat`) as PBRMaterial;
+    (playerList[playerId].controllerL as Mesh).material = scene.getMaterialByName(`player${playerNumber}_mat`) as PBRMaterial;
+    (playerList[playerId].controllerR as Mesh).material = scene.getMaterialByName(`player${playerNumber}_mat`) as PBRMaterial;
 }
 
 function updateBall(ballPosition: { x: number, y: number, z: number }) {
@@ -1646,21 +1648,28 @@ socket.on('playerExitGame', (playerId: string, options: { onlyExit: boolean }) =
             }
 
             playerList[playerId].playerNumber = 0;
-            changePlayerColor(playerId);
+            changePlayerColor(playerId, 0);
 
             updateHUDPosition(0);
             guiTextElements['client_HUDLabel'].text = ``;
             guiTextElements['client_HUDLabel'].color = "red";
 
+            // set all walls to visible
+            for (let i = 1; i <= 6; i++) {
+                let wall = scene.getMeshByName(`player${i}Wall`) as Mesh;
+                if (wall) {
+                    wall.isVisible = true;
+                }
+            }
         }
     }
 });
 
 function resetPlayersGameScene(playerId: string) {
-    let playerWall = scene.getMeshByName(`player${playerList[playerId].playerNumber}Wall`) as Mesh;
-    if (playerWall) {
-        playerWall.isVisible = true;
-    }
+    // let playerWall = scene.getMeshByName(`player${playerList[playerId].playerNumber}Wall`) as Mesh;
+    // if (playerWall) {
+    //     playerWall.isVisible = true;
+    // }
 
     if (playerId == clientID) {
         let skyBoxMesh = scene.getMeshByName('skyBoxMesh') as Mesh;
@@ -1687,7 +1696,7 @@ function resetPlayersGameScene(playerId: string) {
 
 }
 
-socket.on('gameResults', (winnerId: string, winnerScore: number, results: { playerId: string, score: number }[]) => {
+socket.on('gameResults', (winnerId: string, winnerScore: number, results: { playerId: string, playerNumber: number, score: number }[]) => {
     console.log('Game Results: ', results);
 
     updateHUDPosition(playerList[clientID].playerNumber);
@@ -1695,16 +1704,64 @@ socket.on('gameResults', (winnerId: string, winnerScore: number, results: { play
     guiRectElements['client_HUDRect'].color = playerStartInfos[playerList[clientID].playerNumber].color;
 
     if (winnerId == clientID) {
-        guiTextElements['client_HUDLabel'].text = `You won the game with ${playerList[clientID].score} points!`;
+        guiTextElements['client_HUDLabel'].text = `You won the game!\nYour final Score: ${playerList[clientID].score}\n`;
     } else {
-        guiTextElements['client_HUDLabel'].text = `Your final Score: ${playerList[clientID].score} points!`;
+        guiTextElements['client_HUDLabel'].text = `Your final Score: ${playerList[clientID].score}\n`;
     }
 
-    showWinner(winnerId, winnerScore);
+    showPlayerResultsAndWinner(winnerId, results);
 });
 
-function showWinner(winnerId: string, winnerScore: number) {
-    let winnerMesh = scene.getMeshByName('winnerMesh') as Mesh;
+function showPlayerResultsAndWinner(winnerId: string, results: { playerId: string, playerNumber: number, score: number }[]) {
+
+    // create a plane for each player to show the final score and the winner
+    for (let i = 0; i < results.length; i++) {
+
+        console.log('Showing player results over head');
+        let playerResult = results[i];
+
+        console.log(results[i].playerId, results[i].playerNumber, results[i].score);
+
+        let finalScoreMesh = MeshBuilder.CreatePlane(`finalScoreMesh_${playerResult.playerNumber}`, { size: 2 }, scene);
+        finalScoreMesh.position = new Vector3(playerList[playerResult.playerId].position.x, playerList[playerResult.playerId].position.y + 0.5, playerList[playerResult.playerId].position.z);
+        finalScoreMesh.billboardMode = Mesh.BILLBOARDMODE_ALL;
+        finalScoreMesh.scaling = new Vector3(1, 1, 1);
+        finalScoreMesh.isVisible = true;
+
+        // GUI --------------------------------------------------------------------------------------
+
+        var finalScoreTex = GUI.AdvancedDynamicTexture.CreateForMesh(finalScoreMesh);
+        // Player Score
+        var finalScoreRect = new GUI.Rectangle();
+        finalScoreRect.thickness = 0;
+        finalScoreRect.width = 1;
+        finalScoreRect.height = 1;
+        finalScoreTex.addControl(finalScoreRect);
+
+        var finalScoreLabel = new GUI.TextBlock();
+        finalScoreLabel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
+        finalScoreLabel.fontFamily = "loadedFont";
+        finalScoreLabel.text = `Player ${playerResult.playerNumber}\nScore: ${playerResult.score}`;
+        finalScoreLabel.textWrapping = true;
+        finalScoreLabel.textHorizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+        finalScoreLabel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+        finalScoreLabel.color = playerStartInfos[playerResult.playerNumber].color;
+        finalScoreLabel.fontSize = 50;
+        finalScoreRect.addControl(finalScoreLabel);
+
+        if (playerResult.playerId == winnerId) {
+            var winnerLabel = new GUI.TextBlock();
+            winnerLabel.textHorizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+            winnerLabel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
+            winnerLabel.fontFamily = "loadedFont";
+            winnerLabel.text = `WINNER\n\n`;
+            winnerLabel.color = playerStartInfos[playerResult.playerNumber].color;
+            winnerLabel.fontSize = 100;
+            finalScoreRect.addControl(winnerLabel);
+        }
+
+        playerList[playerResult.playerId].finalScoreMesh = finalScoreMesh;
+    }
 }
 
 socket.on('clearGameResults', () => {
@@ -1712,6 +1769,12 @@ socket.on('clearGameResults', () => {
     guiTextElements['client_HUDLabel'].text = ``;
     guiTextElements['client_HUDLabel'].color = "red";
     guiRectElements['client_HUDRect'].color = "red";
+
+    for (let id in playerList) {
+        if (playerList[id].finalScoreMesh) {
+            playerList[id].finalScoreMesh?.dispose();
+        }
+    }
 });
 
 socket.on('playerDisconnected', (id) => {

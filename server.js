@@ -1514,7 +1514,7 @@ function setGameTimer() {
                 for (let id in playerList) {
                     resetPlayerAfterGameTimer(id);
                 }
-            }, 10000); // Show the game results for 10 seconds
+            }, 20000); // Show the game results for 20 seconds
         }
     }, 1000);
 }
@@ -1525,7 +1525,7 @@ function showGameResults() {
     let results = [];
     for (let id in playerList) {
         if (playerList[id].isPlaying == true) {
-            results.push({ id: playerList[id].id, score: playerList[id].score });
+            results.push({ playerId: playerList[id].id, playerNumber: playerList[id].playerNumber, score: playerList[id].score });
             if (!winnerId || playerList[id].score > playerList[winnerId].score) {
                 winnerId = id;
                 winnerScore = playerList[id].score;
