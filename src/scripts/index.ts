@@ -47,8 +47,8 @@ let rightController: WebXRInputSource | null = null;
 const guiTextElements: { [key: string]: GUI.TextBlock } = {};
 const guiRectElements: { [key: string]: GUI.Rectangle } = {};
 
-let exitGameAreaInterval: NodeJS.Timer | null = null;
-let enteredGameAreaInterval: NodeJS.Timer | null = null;
+let exitGameAreaInterval: ReturnType<typeof setInterval> | null = null;
+let enteredGameAreaInterval: ReturnType<typeof setInterval> | null = null;
 
 const ghostColor = '#bdbdbd';
 
@@ -1624,66 +1624,94 @@ socket.on('ballBounce', (whichPlayer: number, isPaddle: boolean) => {
     }
 });
 
-socket.on('playerExitGame', (playerId) => {
-    const exitPlayer = playerList[playerId];
-    if (exitPlayer) {
-        console.log(`Player ${exitPlayer.playerNumber} left the game.`);
-        clientTestArray.push(`----------Player ${exitPlayer.playerNumber} left the game.----------`);
-
-        let playerWall = scene.getMeshByName(`player${exitPlayer.playerNumber}Wall`) as Mesh;
-        if (playerWall) {
-            playerWall.isVisible = true;
-        }
-
-        if (playerId == clientID) {
-            let skyBoxMesh = scene.getMeshByName('skyBoxMesh') as Mesh;
-            if (skyBoxMesh) {
-                skyBoxMesh.isVisible = false;
-            }
-            for (let i = 1; i <= 6; i++) {
-                let wall = scene.getMeshByName(`player${i}Wall`) as Mesh;
-                if (wall) {
-                    wall.isVisible = false;
-                }
-            }
-            for (let i = 1; i <= 4; i++) {
-                let playerGround = scene.getMeshByName(`player${i}Ground`) as Mesh;
-                let playerGroundPlane = scene.getMeshByName(`player${i}GroundPlane`) as Mesh;
-                if (playerGround) {
-                    playerGround.isVisible = false;
-                }
-                if (playerGroundPlane) {
-                    playerGroundPlane.isVisible = true;
-                }
-            }
-        }
-
-        // let playerScore = scene.getMeshByName(`player${exitPlayer.playerNumber}ScoreMesh`) as Mesh;
-        // if (playerScore) {
-        //     playerScore.isVisible = false;
-        // }
+socket.on('playerExitGame', (playerId: string, options: { onlyExit: boolean }) => {
+    if (playerList[playerId]) {
+        console.log(`Player ${playerList[playerId].playerNumber} left the game.`);
+        clientTestArray.push(`----------Player ${playerList[playerId].playerNumber} left the game.----------`);
 
         playerList[playerId].isPlaying = false;
 
+        resetPlayersGameScene(playerId);
+
         hidePlayerGameUtils(playerId);
 
-        // exitPlayer.paddle?.dispose();
-        // exitPlayer.paddleLight?.dispose();
-        // exitPlayer.scoreMesh?.dispose();
+        // only reset the player number and color if the player is resetted after the game results
+        if (options.onlyExit == false) {
 
-        // set the availability of the start buttons according to the used startpositions on the server
-        if (!playerList[playerId].isPlaying) {
-            if (startButtons[playerList[playerId].playerNumber].classList.contains('unavailable')) {
-                startButtons[playerList[playerId].playerNumber].classList.remove('unavailable');
+            // set the availability of the start buttons according to the used startpositions on the server
+            if (!playerList[playerId].isPlaying) {
+                if (startButtons[playerList[playerId].playerNumber].classList.contains('unavailable')) {
+                    startButtons[playerList[playerId].playerNumber].classList.remove('unavailable');
+                }
+            }
+
+            playerList[playerId].playerNumber = 0;
+            changePlayerColor(playerId);
+
+            updateHUDPosition(0);
+            guiTextElements['client_HUDLabel'].text = ``;
+            guiTextElements['client_HUDLabel'].color = "red";
+
+        }
+    }
+});
+
+function resetPlayersGameScene(playerId: string) {
+    let playerWall = scene.getMeshByName(`player${playerList[playerId].playerNumber}Wall`) as Mesh;
+    if (playerWall) {
+        playerWall.isVisible = true;
+    }
+
+    if (playerId == clientID) {
+        let skyBoxMesh = scene.getMeshByName('skyBoxMesh') as Mesh;
+        if (skyBoxMesh) {
+            skyBoxMesh.isVisible = false;
+        }
+        for (let i = 1; i <= 6; i++) {
+            let wall = scene.getMeshByName(`player${i}Wall`) as Mesh;
+            if (wall) {
+                wall.isVisible = false;
             }
         }
-        playerList[playerId].playerNumber = 0;
-        changePlayerColor(playerId);
-
-        updateHUDPosition(0);
-        guiTextElements['client_HUDLabel'].text = ``;
-        guiTextElements['client_HUDLabel'].color = "red";
+        for (let i = 1; i <= 4; i++) {
+            let playerGround = scene.getMeshByName(`player${i}Ground`) as Mesh;
+            let playerGroundPlane = scene.getMeshByName(`player${i}GroundPlane`) as Mesh;
+            if (playerGround) {
+                playerGround.isVisible = false;
+            }
+            if (playerGroundPlane) {
+                playerGroundPlane.isVisible = true;
+            }
+        }
     }
+
+}
+
+socket.on('gameResults', (winnerId: string, winnerScore: number, results: { playerId: string, score: number }[]) => {
+    console.log('Game Results: ', results);
+
+    updateHUDPosition(playerList[clientID].playerNumber);
+    guiTextElements['client_HUDLabel'].color = playerStartInfos[playerList[clientID].playerNumber].color;
+    guiRectElements['client_HUDRect'].color = playerStartInfos[playerList[clientID].playerNumber].color;
+
+    if (winnerId == clientID) {
+        guiTextElements['client_HUDLabel'].text = `You won the game with ${playerList[clientID].score} points!`;
+    } else {
+        guiTextElements['client_HUDLabel'].text = `Your final Score: ${playerList[clientID].score} points!`;
+    }
+
+    showWinner(winnerId, winnerScore);
+});
+
+function showWinner(winnerId: string, winnerScore: number) {
+    let winnerMesh = scene.getMeshByName('winnerMesh') as Mesh;
+}
+
+socket.on('clearGameResults', () => {
+    updateHUDPosition(0);
+    guiTextElements['client_HUDLabel'].text = ``;
+    guiTextElements['client_HUDLabel'].color = "red";
+    guiRectElements['client_HUDRect'].color = "red";
 });
 
 socket.on('playerDisconnected', (id) => {
@@ -1801,6 +1829,7 @@ function updateHUDPosition(positionNumber: number) {
 }
 
 function updateHUDInfo(eventType: string, eventTimerTime: number = 0) {
+
     if (eventType == 'exitGameArea') {
         guiRectElements['client_HUDRect'].color = "red";
         guiTextElements['client_HUDLabel'].text = `Exit Game in: \n${eventTimerTime / 1000}s\n`;
@@ -1811,14 +1840,14 @@ function updateHUDInfo(eventType: string, eventTimerTime: number = 0) {
             timer -= 1;
             guiTextElements['client_HUDLabel'].text = `Exit Game in: \n${timer}s\n`;
             if (timer <= 0) {
-                clearInterval(exitGameAreaInterval as NodeJS.Timeout);
+                clearInterval(exitGameAreaInterval as ReturnType<typeof setInterval>);
                 timer = eventTimerTime / 1000;
             }
         }, 1000);
     } else if (eventType == 'reenteredGameArea') {
         guiTextElements['client_HUDLabel'].text = ``;
         guiTextElements['client_HUDLabel'].color = "red";
-        clearInterval(exitGameAreaInterval as NodeJS.Timeout);
+        clearInterval(exitGameAreaInterval as ReturnType<typeof setInterval>);
     } else if (eventType == 'enteredGameArea') {
         guiRectElements['client_HUDRect'].color = playerStartInfos[playerList[clientID].inPosition].color;
         guiTextElements['client_HUDLabel'].text = `Join Game in: \n${eventTimerTime / 1000}s\n`;
@@ -1829,14 +1858,14 @@ function updateHUDInfo(eventType: string, eventTimerTime: number = 0) {
             timer -= 1;
             guiTextElements['client_HUDLabel'].text = `Join Game in: \n${timer}s\n`;
             if (timer <= 0) {
-                clearInterval(enteredGameAreaInterval as NodeJS.Timeout);
+                clearInterval(enteredGameAreaInterval as ReturnType<typeof setInterval>);
                 timer = eventTimerTime / 1000;
             }
         }, 1000);
     } else if (eventType == 'exitJoiningGameArea') {
         guiTextElements['client_HUDLabel'].text = ``;
         guiTextElements['client_HUDLabel'].color = "red";
-        clearInterval(enteredGameAreaInterval as NodeJS.Timeout);
+        clearInterval(enteredGameAreaInterval as ReturnType<typeof setInterval>);
     }
 }
 

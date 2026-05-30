@@ -175,7 +175,7 @@ let deltaTMultiplier = 1; // multiplier for game values by deltaT
 let autoJoin = false; // if true, players can join the game by entering the game area
 
 let gameTimer = null; // timer for the game to end after a certain time
-const gameTimerTime = 300000; // in milliseconds, 5 minutes
+const gameTimerTime = 10000; // in milliseconds, 5 minutes
 let timerInSeconds = 0; // timer in seconds, used for the game timer
 
 // Test Variables
@@ -396,7 +396,7 @@ io.on('connection', (socket) => {
             socket.emit('startPosDenied');
         }
     });*/
-    
+
 
     // !6
     socket.on('requestEnterAR', (startPlayerNum) => {
@@ -1486,16 +1486,91 @@ function setGameTimer() {
         timerInSeconds++;
         // console.log(`Game Timer: ${timerInSeconds}s`);
         io.emit('gameTimeUpdate', timerInSeconds);
+
+        // Check if the Game Time Limit has been reached, if yes end the game and reset everything
         if (timerInSeconds >= gameTimerTime / 1000) {
-            clearInterval(gameTimer);
-            gameTimer = null;
+            clearInterval(gameTimer); // 1. Stop the timer
+
+            gameTimer = null; // 2. Reset the timer variable
+
             console.log('Game Timer ended, resetting Game.');
-            resetGame();
+
+            resetGame(); // 3. Reset the game (ball position, velocity, speed and color)
+
+            showGameResults(); // 4. Show the game results (personal scores and winner)
+
+            // 5. Exit the Players from the game, but keep the player numbers and scores for the results
             for (let id in playerList) {
                 if (playerList[id].isPlaying == true) {
-                    playerExitsGame(id);
+                    exitPlayerAfterGameTimer(id);
                 }
             }
+
+            setTimeout(() => {
+                console.log('Clearing game results.');
+                clearGameResults(); // 6. Clear the game results after a view seconds
+
+                // 7. Reset the players and their scores
+                for (let id in playerList) {
+                    if (playerList[id].isPlaying == true) {
+                        resetPlayerAfterGameTimer(id);
+                    }
+                }
+            }, 10000); // Show the game results for 10 seconds
         }
     }, 1000);
+}
+
+function showGameResults() {
+    let winnerId;
+    let winnerScore;
+    let results = [];
+    for (let id in playerList) {
+        if (playerList[id].isPlaying == true) {
+            results.push({ id: playerList[id].id, score: playerList[id].score });
+            if (!winnerId || playerList[id].score > playerList[winnerId].score) {
+                winnerId = id;
+                winnerScore = playerList[id].score;
+            }
+        }
+    }
+    if (winnerId && winnerScore != undefined && results.length > 0) {
+
+        console.log(`Game Results: Winner is Player ${winnerId} with a score of ${winnerScore}. Full results: `, results);
+        io.emit('gameResults', winnerId, winnerScore, results);
+    }
+}
+
+function clearGameResults() {
+    io.emit('clearGameResults');
+}
+
+function exitPlayerAfterGameTimer(playerId) {
+    playerStartInfos[playerList[playerId].playerNumber].used = false;
+
+    if (areaExitTimerList[playerList[playerId].playerNumber] != null) {
+        clearTimeout(areaExitTimerList[playerList[playerId].playerNumber]);
+        areaExitTimerList[playerList[playerId].playerNumber] = null;
+    }
+
+    playerList[playerId].isPlaying = false;
+
+    io.emit('playerExitGame', playerId, { onlyExit: true });
+}
+
+function resetPlayerAfterGameTimer(playerId) {
+    console.log(`Resetting Player ${playerId} after Game Timer ended.`);
+    playerStartInfos[playerList[playerId].playerNumber].used = false;
+
+    if (areaExitTimerList[playerList[playerId].playerNumber] != null) {
+        clearTimeout(areaExitTimerList[playerList[playerId].playerNumber]);
+        areaExitTimerList[playerList[playerId].playerNumber] = null;
+    }
+
+    playerList[playerId].isPlaying = false; // safety first reset it again
+    playerList[playerId].score = 0;
+    playerList[playerId].playerNumber = 0;
+
+    io.emit('playerExitGame', playerId, { onlyExit: false });
+    io.emit('scoreUpdate', playerId, 0);
 }
