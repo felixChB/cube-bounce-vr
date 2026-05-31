@@ -1,8 +1,8 @@
 import { io } from 'socket.io-client';
 import { /*Camera,*/ Engine, FreeCamera, /*Material,*/ /*PBRBaseMaterial,*/ PBRMaterial, Scene } from '@babylonjs/core';
-import { /*ArcRotateCamera,*/ MeshBuilder, GlowLayer, Animation } from '@babylonjs/core';
+import { /*ArcRotateCamera,*/ MeshBuilder, GlowLayer, Animation, ParticleSystem } from '@babylonjs/core';
 import { DirectionalLight, PointLight } from '@babylonjs/core';
-import { Mesh, StandardMaterial, Texture, Color3, Color4, Vector3, Quaternion, CubeTexture } from '@babylonjs/core';
+import { Mesh, StandardMaterial, Texture, Color3, Color4, Vector3, Quaternion, CubeTexture, HighlightLayer, DynamicTexture } from '@babylonjs/core';
 import { WebXRDefaultExperience, WebXRInputSource } from '@babylonjs/core/XR';
 import * as GUI from '@babylonjs/gui';
 
@@ -83,8 +83,28 @@ let fpsTableArray: { suc: number; time: number }[] = [];
 ////////////////////////////// CREATE BABYLON SCENE ETC. //////////////////////////////
 
 // Basic Setup ---------------------------------------------------------------------------------
-const engine = new Engine(canvas, true);
+const engine = new Engine(canvas, true, { stencil: true });
 const scene = new Scene(engine);
+
+var winnerHighlight = new HighlightLayer('winnerHL', scene);
+
+const SPEED = 0.05;                       // radians added per frame
+const MIN_BLUR = 1;                       // blur at pulse trough
+const MAX_BLUR = 2;                       // blur at pulse peak
+
+var alpha = 0;
+scene.registerBeforeRender(() => {
+    alpha += SPEED; // advance the wave each frame
+
+    // Remap sine (-1 → 1) to a 0 → 1 range, then scale to blur range
+    const t = Math.sin(alpha) * 0.5 + 0.5;          // 0 → 1
+    const blur = MIN_BLUR + (MAX_BLUR - MIN_BLUR) * t;  // MIN → MAX
+
+    // Apply identically to both axes → perfectly synchronised pulse
+    winnerHighlight.blurHorizontalSize = blur;
+    winnerHighlight.blurVerticalSize = blur;
+});
+
 
 // let ssr: SSRRenderingPipeline;
 
@@ -1675,7 +1695,7 @@ function resetPlayersGameScene(playerId: string) {
 
 }
 
-socket.on('gameResults', (winnerId: string, winnerScore: number, results: { playerId: string, playerNumber: number, score: number }[]) => {
+socket.on('gameResults', (winnerId: string, _winnerScore: number, results: { playerId: string, playerNumber: number, score: number }[]) => {
     console.log('Game Results: ', results);
 
     updateHUDPosition(playerList[clientID].playerNumber);
@@ -1689,6 +1709,7 @@ socket.on('gameResults', (winnerId: string, winnerScore: number, results: { play
     }
 
     showPlayerResultsAndWinner(winnerId, results);
+    showWinnerConfettiAnimation(winnerId);
 });
 
 function showPlayerResultsAndWinner(winnerId: string, results: { playerId: string, playerNumber: number, score: number }[]) {
@@ -1700,6 +1721,17 @@ function showPlayerResultsAndWinner(winnerId: string, results: { playerId: strin
         let playerResult = results[i];
 
         console.log(results[i].playerId, results[i].playerNumber, results[i].score);
+
+        // add a glow to the winners head and controllers
+        if (playerList[winnerId].headObj) {
+            winnerHighlight.addMesh(playerList[winnerId].headObj, Color3.FromHexString(playerStartInfos[playerList[winnerId].playerNumber].color));
+        }
+        if (playerList[winnerId].controllerR) {
+            winnerHighlight.addMesh(playerList[winnerId].controllerR, Color3.FromHexString(playerStartInfos[playerList[winnerId].playerNumber].color));
+        }
+        if (playerList[winnerId].controllerL) {
+            winnerHighlight.addMesh(playerList[winnerId].controllerL, Color3.FromHexString(playerStartInfos[playerList[winnerId].playerNumber].color));
+        }
 
         let finalScoreMesh = MeshBuilder.CreatePlane(`finalScoreMesh_${playerResult.playerNumber}`, { size: 2 }, scene);
         finalScoreMesh.position = new Vector3(playerList[playerResult.playerId].position.x, playerList[playerResult.playerId].position.y + 0.5, playerList[playerResult.playerId].position.z);
@@ -1726,6 +1758,8 @@ function showPlayerResultsAndWinner(winnerId: string, results: { playerId: strin
         finalScoreLabel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
         finalScoreLabel.color = playerStartInfos[playerResult.playerNumber].color;
         finalScoreLabel.fontSize = 50;
+        finalScoreLabel.outlineColor = playerStartInfos[playerResult.playerNumber].color;
+        finalScoreLabel.outlineWidth = 1;
         finalScoreRect.addControl(finalScoreLabel);
 
         if (playerResult.playerId == winnerId) {
@@ -1737,6 +1771,26 @@ function showPlayerResultsAndWinner(winnerId: string, results: { playerId: strin
             winnerLabel.color = playerStartInfos[playerResult.playerNumber].color;
             winnerLabel.fontSize = 100;
             finalScoreRect.addControl(winnerLabel);
+
+            // highlight the winners labels
+            winnerLabel.outlineColor = playerStartInfos[playerResult.playerNumber].color;
+            winnerLabel.outlineWidth = 5;
+            finalScoreLabel.outlineColor = playerStartInfos[playerResult.playerNumber].color;
+            finalScoreLabel.outlineWidth = 2;
+
+            // --- ADD GLOW EFFECT HERE ---
+
+            // 1. Apply Glow to the "WINNER" text
+            winnerLabel.shadowColor = playerStartInfos[playerResult.playerNumber].color;
+            winnerLabel.shadowBlur = 30;       // The strength/radius of the blur blur
+            winnerLabel.shadowOffsetX = 0;     // Keeps the blur perfectly centered
+            winnerLabel.shadowOffsetY = 0;     // Keeps the blur perfectly centered
+
+            // 2. Apply Glow to the "Score" text
+            finalScoreLabel.shadowColor = playerStartInfos[playerResult.playerNumber].color;
+            finalScoreLabel.shadowBlur = 20;   // Slightly smaller blur because the font size is smaller
+            finalScoreLabel.shadowOffsetX = 0;
+            finalScoreLabel.shadowOffsetY = 0;
         }
 
         playerList[playerResult.playerId].finalScoreMesh = finalScoreMesh;
@@ -1754,6 +1808,9 @@ socket.on('clearGameResults', () => {
             playerList[id].finalScoreMesh?.dispose();
         }
     }
+
+    // remove the glow from the winners head and controllers
+    winnerHighlight.removeAllMeshes();
 });
 
 socket.on('playerDisconnected', (id) => {
@@ -2279,3 +2336,99 @@ socket.on('clearPlayerArray', () => {
 });*/
 
 ////////////////////////// END TESTING GROUND ////////////////////////////// 
+
+function showWinnerConfettiAnimation(winnerId: string) {
+    if (!playerList[winnerId]) {
+        console.warn('No Winner found for confetti animation.');
+        return;
+    }
+    const textureRes = 32;
+    const confettiTexture = new DynamicTexture("confettiTex", textureRes, scene, true);
+    const ctx = confettiTexture.getContext();
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, textureRes, textureRes);
+    confettiTexture.update();
+
+    const confettiColors = [
+        Color3.FromHexString(playerStartInfos[playerList[winnerId].playerNumber].color), // Winner's color
+    ];
+
+    const particleSystems: ParticleSystem[] = [];
+
+    confettiColors.forEach((color, index) => {
+        const ps = new ParticleSystem("confetti_" + index, 500, scene); // 500 is the max number of particles
+        ps.particleTexture = confettiTexture;
+
+        // using the winners head as emitter if it exists
+        // if (playerList[winnerId].headObj) {
+        //     ps.emitter = playerList[winnerId].headObj;
+        // }
+
+        // using the winners ground plane as emitter
+        if (playerList[winnerId].playerNumber != 0) {
+            //ps.emitter = new Vector3((scene.getMeshByName(`player${playerList[winnerId].playerNumber}GroundPlane`) as Mesh).position.x, 0, (scene.getMeshByName(`player${playerList[winnerId].playerNumber}GroundPlane`) as Mesh).position.z);
+            ps.emitter = new Vector3(playerList[winnerId].position.x, playerList[winnerId].position.y, playerList[winnerId].position.z);
+        } else {
+            // console.warn('No emitter found for confetti animation, using default emitter position.');
+            ps.emitter = new Vector3(0, 1.5, 0);
+        }
+
+        // UPDATED: Lowered the Y values so the particles are pushed outward more than upward.
+        ps.createBoxEmitter(
+            new Vector3(-2, 3, -2),         // direction1
+            new Vector3(2.2, 4, 2.2),           // direction2
+            new Vector3(-0.1, -0.15, -0.1),     // minEmitBox
+            new Vector3(0.1, 0.15, 0.1)      // maxEmitBox
+        );
+
+        ps.color1 = new Color4(color.r, color.g, color.b, 1.0);
+        ps.color2 = new Color4(color.r, color.g, color.b, 1.0);
+        ps.colorDead = new Color4(color.r, color.g, color.b, 0.0);
+
+        ps.blendMode = ParticleSystem.BLENDMODE_ADD;
+
+        ps.minSize = 0.02;
+        ps.maxSize = 0.05;
+        ps.minAngularSpeed = -Math.PI;
+        ps.maxAngularSpeed = Math.PI;
+
+        // UPDATED: Drastically reduced emit power for a softer pop.
+        ps.minEmitPower = 0.5;
+        ps.maxEmitPower = 1.5;
+        ps.updateSpeed = 0.0045;
+
+        // UPDATED: Increased the gravity (more negative Y) to pull them down sooner.
+        ps.gravity = new Vector3(0, -20, 0);
+
+        ps.minLifeTime = 0.4;
+        ps.maxLifeTime = 0.9;
+        ps.manualEmitCount = 500;
+        ps.disposeOnStop = false;
+
+        ps.start();
+        particleSystems.push(ps);
+    });
+}
+
+// add an event lister for switching the winnerhighlight and the confetti animation on and off for testing purposes
+window.addEventListener('keydown', function (event) {
+    if (event.key === 'q') {
+        for (let id in playerList) {
+            if (playerList[id].headObj) {
+                winnerHighlight.addMesh(playerList[id].headObj, Color3.FromHexString(playerStartInfos[playerList[id].playerNumber].color));
+            }
+            if (playerList[id].controllerR) {
+                winnerHighlight.addMesh(playerList[id].controllerR, Color3.FromHexString(playerStartInfos[playerList[id].playerNumber].color));
+            }
+            if (playerList[id].controllerL) {
+                winnerHighlight.addMesh(playerList[id].controllerL, Color3.FromHexString(playerStartInfos[playerList[id].playerNumber].color));
+            }
+        }
+    } else if (event.key === 'e') {
+        winnerHighlight.removeAllMeshes();
+    } else if (event.key === 't') {
+        // for testing the confetti animation
+        const testWinnerId = Object.keys(playerList)[0]; // just take the first player in the list as the winner for testing
+        showWinnerConfettiAnimation(testWinnerId);
+    }
+});
