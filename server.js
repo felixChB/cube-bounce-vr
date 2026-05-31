@@ -14,17 +14,21 @@ import { time } from "node:console";
 import { server } from "typescript";
 import { clearInterval } from "node:timers";
 
-const port = process.env.PORT || 3000;
+//// Config variable imports from config.js ////
+// Server settings
+import { ipAdress, serverRefreshRate } from "./config.js";
+// Basic Game settings
+import { gameTimerTime, maxPlayers, showResultsTime } from "./config.js";
+// Game Scores Settings
+import { scoreAddOnHit, scoreSubtractOnMiss } from "./config.js";
+// Game Area sizes and settings
+import { playCubeSize, playCubeElevation, playerAreaDepth, playerAreaDistance, playerPaddleSize, ballStartSpeed } from "./config.js";
+// Leaderboard settings
+import { leaderboardLength } from "./config.js";
+// Server Auto join settings
+import { autoJoin, firstEnteredTimerTime, areaExitTimerTime, areaEnteredTimerTime, enteredDelayTime, exitDelayTime } from "./config.js";
 
-////////////// CHANGE THIS TO YOUR LOCAL IP ADDRESS ///////////////////
-//const ipAdress = '192.168.178.84'; // Desktop zuhause // LAN
-//const ipAdress = '192.168.178.35'; // Desktop zuhause // WLAN
-//const ipAdress = '192.168.1.188'; // Router
-const ipAdress = '192.168.178.84'; // neuer Router
-//const ipAdress = '192.168.50.115'; // Router2 über Internet
-//const ipAdress = '192.168.1.163'; //Router blau
-//const ipAdress = '192.168.50.239'; // Router schwarz
-///////////////////////////////////////////////////////////////////////
+const port = process.env.PORT || 3000;
 
 const app = express();
 
@@ -167,15 +171,11 @@ let connectedClientNumber = 0;
 let allConnectedIds = {}; // store all connected player ids with client types
 // let serverStartTime;
 const currentServerInstanceId = Date.now().toString();
-const serverRefreshRate = 5; // time between server updates in milliseconds
 let lastUpdateTime = performance.now();
 let deltaT = 0; // time since last update in milliseconds
 let deltaTMultiplier = 1; // multiplier for game values by deltaT
 
-let autoJoin = false; // if true, players can join the game by entering the game area
-
 let gameTimer = null; // timer for the game to end after a certain time
-const gameTimerTime = 10000; // in milliseconds, 5 minutes
 let timerInSeconds = 0; // timer in seconds, used for the game timer
 
 // Test Variables
@@ -188,12 +188,6 @@ let testNumber = 0;
 
 // Store all connected players
 let playerList = {};
-
-const firstEnteredTimerTime = 5000; // in milliseconds
-const areaExitTimerTime = 3000; // in milliseconds
-const areaEnteredTimerTime = 3000; // in milliseconds
-const enteredDelayTime = 1000; // in milliseconds
-const exitDelayTime = 1000; // in milliseconds
 
 let areaExitTimer1, areaExitTimer2, areaExitTimer3, areaExitTimer4;
 areaExitTimer1 = areaExitTimer2 = areaExitTimer3 = areaExitTimer4 = null;
@@ -208,17 +202,7 @@ enteredDelayTimer = exitDelayTimer = null;
 
 // Game Variables
 let leaderboard = [];
-const leaderboardLength = 10; // the length of the leaderboard
 readLeaderboardFromFile();
-// let dailyLeaderboard = [];
-// const dailyLeaderboardLength = 10; // the length of the daily leaderboard
-const maxPlayers = 4;
-const playCubeSize = { x: 1.2, y: 1.9, z: 1.2 }; // the size of the player cube in meters // the y value is the top of the cube
-const playCubeElevation = 0.6; // the elevation of the player cube in meters
-const playerAreaDepth = 1; // the depth of the player area in the z direction in meters
-const playerAreaDistance = 0.2; // the distance from the player area to the wall in meters
-const playerPaddleSize = { h: 0.2, w: 0.4 }; // the size of the player plane in meters
-const ballStartSpeed = 0.01 * serverRefreshRate / 10;
 const ballStartColor = '#1f53ff';
 const calculatedCubeHeight = playCubeSize.y - playCubeElevation;
 const midPointOfPlayCube = ((playCubeSize.y - playCubeElevation) / 2) + playCubeElevation;
@@ -822,7 +806,7 @@ setInterval(function () {
                         // ball.velocity.x *= -1;  // Reverse X velocity
                         calculateBallBounce(clampedPaddlePos, playerList[key].playerNumber);
 
-                        playerList[key].score += 1;
+                        playerList[key].score += scoreAddOnHit;
                         ballBounce(1, true);
                         io.emit('scoreUpdate', playerList[key].id, playerList[key].score);
                     }
@@ -855,7 +839,7 @@ setInterval(function () {
                         // ball.velocity.x *= -1;  // Reverse X velocity
                         calculateBallBounce(clampedPaddlePos, playerList[key].playerNumber);
 
-                        playerList[key].score += 1;
+                        playerList[key].score += scoreAddOnHit;
                         ballBounce(2, true);
                         io.emit('scoreUpdate', playerList[key].id, playerList[key].score);
                     }
@@ -887,7 +871,7 @@ setInterval(function () {
                         // ball.velocity.z *= -1;  // Reverse Z velocity
                         calculateBallBounce(clampedPaddlePos, playerList[key].playerNumber);
 
-                        playerList[key].score += 1;
+                        playerList[key].score += scoreAddOnHit;
                         ballBounce(3, true);
                         io.emit('scoreUpdate', playerList[key].id, playerList[key].score);
                     }
@@ -919,7 +903,7 @@ setInterval(function () {
                         // ball.velocity.z *= -1;  // Reverse Z velocity
                         calculateBallBounce(clampedPaddlePos, playerList[key].playerNumber);
 
-                        playerList[key].score += 1;
+                        playerList[key].score += scoreAddOnHit;
                         ballBounce(4, true);
                         io.emit('scoreUpdate', playerList[key].id, playerList[key].score);
                     }
@@ -1035,7 +1019,7 @@ function killTimers(playerNumer) {
 }
 
 function scoreAfterMiss(oldScore) {
-    let newScore = oldScore - 1;
+    let newScore = oldScore - scoreSubtractOnMiss;
     if (newScore < 0) {
         newScore = 0;
     }
@@ -1514,7 +1498,7 @@ function setGameTimer() {
                 for (let id in playerList) {
                     resetPlayerAfterGameTimer(id);
                 }
-            }, 20000); // Show the game results for 20 seconds
+            }, showResultsTime); // Show the game results for the specified time
         }
     }, 1000);
 }
