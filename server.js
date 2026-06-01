@@ -176,7 +176,7 @@ let deltaT = 0; // time since last update in milliseconds
 let deltaTMultiplier = 1; // multiplier for game values by deltaT
 
 let gameTimer = null; // timer for the game to end after a certain time
-let timerInSeconds = 0; // timer in seconds, used for the game timer
+let gameTime = gameTimeLength; // timer in seconds, used for the game timer
 
 // Test Variables
 let serverUpdateCounter = 0;
@@ -532,8 +532,9 @@ io.on('connection', (socket) => {
         io.emit('playerDisconnected', socket.id);
         io.emit('scoreUpdate', socket.id, 0);
 
+        // reset if a player leaves and there are no clients left on the server
         if (playerList.length == 0) {
-            resetBall();
+            resetGame();
         }
     });
 
@@ -952,7 +953,7 @@ setInterval(function () {
                     }
                 });
             }
-            // Reset the ball
+            // Reset the ball after miss
             resetBall();
         } else {
             // make the ball always a litle bit faster
@@ -1460,43 +1461,55 @@ function setGameTimer() {
     if (gameTimer != null) {
         clearInterval(gameTimer);
     }
-    timerInSeconds = 0;
-    io.emit('gameTimeUpdate', timerInSeconds);
+    gameTime = gameTimeLength;
+    io.emit('gameTimeUpdate', gameTime);
     gameTimer = setInterval(() => {
-        timerInSeconds++;
-        // console.log(`Game Timer: ${timerInSeconds}s`);
-        io.emit('gameTimeUpdate', timerInSeconds);
+        gameTime--;
+        // console.log(`Game Timer: ${gameTime}s`);
+        io.emit('gameTimeUpdate', gameTime);
 
         // Check if the Game Time Limit has been reached, if yes end the game and reset everything
-        if (timerInSeconds >= gameTimeLength / 1000) {
-            clearInterval(gameTimer); // 1. Stop the timer
-
-            gameTimer = null; // 2. Reset the timer variable
-
-            console.log('Game Timer ended, resetting Game.');
-
-            resetBall(); // 3. Reset the game (ball position, velocity, speed and color)
-
-            showGameResults(); // 4. Show the game results (personal scores and winner)
-
-            // 5. Exit the Players from the game, but keep the player numbers and scores for the results
-            for (let id in playerList) {
-                if (playerList[id].isPlaying == true) {
-                    exitPlayerAfterGameTimer(id);
-                }
-            }
-
-            setTimeout(() => {
-                console.log('Clearing game results.');
-                clearGameResults(); // 6. Clear the game results after a view seconds
-
-                // 7. Reset the players and their scores
-                for (let id in playerList) {
-                    resetPlayerAfterGameTimer(id);
-                }
-            }, showResultsTime); // Show the game results for the specified time
+        if (gameTime <= 0) {
+            resetGame(true);
         }
     }, 1000);
+}
+
+function resetGame(resetWithResults = false) {
+    if (gameTimer != null) {
+        clearInterval(gameTimer); // 1. allways stop the timer
+        gameTimer = null; // 2. allways reset the timer variable
+    }
+
+
+
+    resetBall(); // 3. allways reset the game (ball position, velocity, speed and color)
+
+    if (resetWithResults) { // only do this when showing game results
+
+        showGameResults(); // 4. Show the game results (personal scores and winner)
+
+        // 5. Exit the Players from the game, but keep the player numbers and scores for the results
+        for (let id in playerList) {
+            if (playerList[id].isPlaying == true) {
+                exitPlayerFully(id);
+            }
+        }
+
+        setTimeout(() => {
+            clearGameResults(); // 6. Clear the game results after a view seconds
+
+            // 7. Reset the players and their scores
+            for (let id in playerList) {
+                exitPlayerFully(id, true);
+            }
+        }, showResultsTime * 1000); // Show the game results for the specified time
+
+    } else { // if not showing results, just reset the players and their scores
+        for (let id in playerList) {
+            exitPlayerFully(id, true);
+        }
+    }
 }
 
 function showGameResults() {
@@ -1521,24 +1534,13 @@ function showGameResults() {
 }
 
 function clearGameResults() {
+    console.log('Clearing game results.');
     io.emit('clearGameResults');
 }
 
-function exitPlayerAfterGameTimer(playerId) {
-    playerStartInfos[playerList[playerId].playerNumber].used = false;
+function exitPlayerFully(playerId, withReset = false) {
 
-    if (areaExitTimerList[playerList[playerId].playerNumber] != null) {
-        clearTimeout(areaExitTimerList[playerList[playerId].playerNumber]);
-        areaExitTimerList[playerList[playerId].playerNumber] = null;
-    }
-
-    playerList[playerId].isPlaying = false;
-
-    io.emit('playerExitGame', playerId, { onlyExit: true });
-}
-
-function resetPlayerAfterGameTimer(playerId) {
-    console.log(`Resetting Player ${playerId} after Game Timer ended.`);
+    // allways reset the player timers and position.used if not playerNumer 0
     if (playerList[playerId].playerNumber != 0) {
         playerStartInfos[playerList[playerId].playerNumber].used = false;
 
@@ -1548,10 +1550,19 @@ function resetPlayerAfterGameTimer(playerId) {
         }
     }
 
-    playerList[playerId].isPlaying = false; // safety first reset it again
-    playerList[playerId].score = 0;
-    playerList[playerId].playerNumber = 0;
+    // allways set player to not playing
+    playerList[playerId].isPlaying = false;
 
-    io.emit('playerExitGame', playerId, { onlyExit: false });
-    io.emit('scoreUpdate', playerId, 0);
+    if (withReset) {
+        console.log(`Exiting and Resetting Player ${playerId} fully.`);
+
+        playerList[playerId].score = 0;
+        playerList[playerId].playerNumber = 0;
+
+        io.emit('playerExitGame', playerId, { onlyExit: false });
+        io.emit('scoreUpdate', playerId, 0);
+    } else {
+        console.log(`Exiting Player ${playerId} from the game without resetting.`);
+        io.emit('playerExitGame', playerId, { onlyExit: true });
+    }
 }

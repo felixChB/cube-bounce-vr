@@ -31,7 +31,7 @@ const guiRectElements: { [key: string]: GUI.Rectangle } = {};
 
 const ghostColor = '#bdbdbd';
 
-let gameTimerTimeClient: number = 0; // game timer time in seconds
+let gameTimeLengthClient: number = 0; // game timer time in seconds
 let gameTime: number = 0; // game time in seconds
 
 // Get HTML Elements
@@ -730,7 +730,7 @@ socket.on('forceReload', () => {
 // get all current Player Information from the Server at the start
 // and spawning all current players except yourself
 socket.on('currentState', (players: { [key: string]: Player }, ballColor: string,
-    playerStartInfosServer: { [key: number]: PlayerStartInfo }, sceneStartInfosServer: SceneStartInfos, _autoJoin: boolean, gameTimerTime: number, serverInstanceId: string) => {
+    playerStartInfosServer: { [key: number]: PlayerStartInfo }, sceneStartInfosServer: SceneStartInfos, _autoJoin: boolean, gameTimeLength: number, serverInstanceId: string) => {
 
     const savedInstanceId = sessionStorage.getItem('serverInstanceId');
     if (savedInstanceId && savedInstanceId !== serverInstanceId) {
@@ -741,7 +741,7 @@ socket.on('currentState', (players: { [key: string]: Player }, ballColor: string
     }
     sessionStorage.setItem('serverInstanceId', serverInstanceId);
 
-    gameTimerTimeClient = gameTimerTime;
+    gameTimeLengthClient = gameTimeLength;
 
     sceneStartInfos = sceneStartInfosServer;
     playerStartInfos = playerStartInfosServer;
@@ -823,8 +823,8 @@ socket.on('serverUpdate', (playerGameDataList, ballPosition, serverSendTime, ser
     socket.emit('ServerPong', serverSendTime, socket.id, serverUpdateCounter);
 });
 
-socket.on('gameTimeUpdate', (gameTimerInSeconds) => {
-    gameTime = gameTimerInSeconds;
+socket.on('gameTimeUpdate', (gameTimeInSeconds) => {
+    gameTime = gameTimeInSeconds;
 
     updateGameTimer();
 });
@@ -1447,10 +1447,10 @@ canvasWrapper.addEventListener('click', () => {
 
 function updateGameTimer() {
     if (gameTimerDiv) {
-        let delta = gameTimerTimeClient - gameTime * 1000;
-        console.log('Game Timer Delta: ', delta, ' Game Time Client: ', gameTimerTimeClient, ' Game Time: ', gameTime * 1000);
-        let minutes = Math.floor((delta % (1000 * 60 * 60)) / (1000 * 60));
-        let seconds = Math.floor((delta % (1000 * 60)) / 1000);
+        let delta = gameTime;
+        // console.log('Game Timer Delta: ', delta, ' Game Time Client: ', gameTimeLengthClient, ' Game Time: ', gameTime);
+        let minutes = Math.floor((delta % (60 * 60)) / (60));
+        let seconds = Math.floor((delta % (60)) / 1);
         gameTimerDiv.innerHTML = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     }
 }
