@@ -1633,7 +1633,7 @@ socket.on('playerExitGame', (playerId: string, options: { onlyExit: boolean }) =
         if (options.onlyExit == false) {
 
             // set the availability of the start buttons according to the used startpositions on the server
-            if (!playerList[playerId].isPlaying) {
+            if (!playerList[playerId].isPlaying && playerList[playerId].playerNumber != 0) {
                 if (startButtons[playerList[playerId].playerNumber].classList.contains('unavailable')) {
                     startButtons[playerList[playerId].playerNumber].classList.remove('unavailable');
                 }
