@@ -12,7 +12,7 @@ export const ipAdress = '192.168.178.84';
 export const serverRefreshRate = 5; // time between server updates in milliseconds
 
 //// Basic Game  settings ////
-export const gameTimerTime = 10 * 1000; // the Game Length in milliseconds, 5 minutes = 300s
+export const gameTimeLength = 10 * 1000; // the Game Length in milliseconds, 5 minutes = 300s
 export const maxPlayers = 4; // the maximum number of players that can join the game
 export const showResultsTime = 15 * 1000; // the time to show the results after the game ends in milliseconds
 

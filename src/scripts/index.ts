@@ -28,7 +28,7 @@ let playerUsingXR: boolean = false;
 let isVRMode: boolean = true;
 let autoJoinClient: boolean = false; //gets overritten by the server in the current state
 
-let gameTimerTimeClient: number = 0; // game timer time in seconds
+let gameTimeLengthClient: number = 0; // game timer time in seconds
 let gameTime: number = 0; // game time in seconds
 
 let playerList: { [key: string]: Player } = {};
@@ -940,7 +940,7 @@ socket.on('startPosDenied', (errorCode) => {
 // get all current Player Information from the Server at the start
 // and spawning all current players except yourself
 socket.on('currentState', (players: { [key: string]: Player }, ballColor: string,
-    playerStartInfosServer: { [key: number]: PlayerStartInfo }, sceneStartInfosServer: SceneStartInfos, autoJoin: boolean, gameTimerTime: number, serverInstanceId: string) => {
+    playerStartInfosServer: { [key: number]: PlayerStartInfo }, sceneStartInfosServer: SceneStartInfos, autoJoin: boolean, gameTimeLength: number, serverInstanceId: string) => {
 
     const savedInstanceId = sessionStorage.getItem('serverInstanceId');
     if (savedInstanceId && savedInstanceId !== serverInstanceId) {
@@ -954,7 +954,7 @@ socket.on('currentState', (players: { [key: string]: Player }, ballColor: string
     clientTestArray.push(`----------Client received currentState----------`);
 
     autoJoinClient = autoJoin;
-    gameTimerTimeClient = gameTimerTime;
+    gameTimeLengthClient = gameTimeLength;
 
     sceneStartInfos = sceneStartInfosServer;
     playerStartInfos = playerStartInfosServer;

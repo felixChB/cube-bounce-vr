@@ -18,7 +18,7 @@ import { clearInterval } from "node:timers";
 // Server settings
 import { ipAdress, serverRefreshRate } from "./config.js";
 // Basic Game settings
-import { gameTimerTime, maxPlayers, showResultsTime } from "./config.js";
+import { gameTimeLength, maxPlayers, showResultsTime } from "./config.js";
 // Game Scores Settings
 import { scoreAddOnHit, scoreSubtractOnMiss } from "./config.js";
 // Game Area sizes and settings
@@ -366,7 +366,7 @@ io.on('connection', (socket) => {
 
     // !5
     // Send the current state to the new player
-    socket.emit('currentState', playerList, activeColor, playerStartInfos, sceneStartinfos, autoJoin, gameTimerTime, currentServerInstanceId);
+    socket.emit('currentState', playerList, activeColor, playerStartInfos, sceneStartinfos, autoJoin, gameTimeLength, currentServerInstanceId);
 
     // start as a previous player
     /*socket.on('continueAsPreviousPlayer', (previousPlayerData) => {
@@ -1472,7 +1472,7 @@ function setGameTimer() {
         io.emit('gameTimeUpdate', timerInSeconds);
 
         // Check if the Game Time Limit has been reached, if yes end the game and reset everything
-        if (timerInSeconds >= gameTimerTime / 1000) {
+        if (timerInSeconds >= gameTimeLength / 1000) {
             clearInterval(gameTimer); // 1. Stop the timer
 
             gameTimer = null; // 2. Reset the timer variable
