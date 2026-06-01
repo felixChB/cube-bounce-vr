@@ -9,7 +9,7 @@ import * as GUI from '@babylonjs/gui';
 //import '@babylonjs/core/Materials/Textures/Loaders'; // Required for EnvironmentHelper
 import '@babylonjs/loaders/glTF'; // Enable GLTF/GLB loader for loading controller models from WebXR Input registry
 
-//import { Inspector } from '@babylonjs/inspector';
+import { Inspector } from '@babylonjs/inspector';
 
 const socket = io();
 
@@ -302,6 +302,17 @@ function createBasicScene(sceneStartInfos: SceneStartInfos, playerStartInfos: { 
     // add to guiTextElements
     guiRectElements[`client_HUDRect`] = HUDRect;
     guiTextElements[`client_HUDLabel`] = HUDLabel;
+
+    // Particle Textures --------------------------------------------------------------------------------------
+
+    const textureRes = 32;
+    const confettiTexture = new DynamicTexture("confettiTexture", textureRes, scene, true);
+    const ctx = confettiTexture.getContext();
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, textureRes, textureRes);
+    confettiTexture.update();
+
+    // createWinnerParticleSystem();
 
     // Materials --------------------------------------------------------------------------------------
 
@@ -1691,14 +1702,16 @@ function resetPlayersGameScene(playerId: string) {
 socket.on('gameResults', (winnerId: string, _winnerScore: number, results: { playerId: string, playerNumber: number, score: number }[]) => {
     console.log('Game Results: ', results);
 
-    updateHUDPosition(playerList[clientID].playerNumber);
-    guiTextElements['client_HUDLabel'].color = playerStartInfos[playerList[clientID].playerNumber].color;
-    guiRectElements['client_HUDRect'].color = playerStartInfos[playerList[clientID].playerNumber].color;
+    if (playerList[clientID]) {
+        updateHUDPosition(playerList[clientID].playerNumber);
+        guiTextElements['client_HUDLabel'].color = playerStartInfos[playerList[clientID].playerNumber].color;
+        guiRectElements['client_HUDRect'].color = playerStartInfos[playerList[clientID].playerNumber].color;
 
-    if (winnerId == clientID) {
-        guiTextElements['client_HUDLabel'].text = `You won the game!\nYour final Score: ${playerList[clientID].score}\n`;
-    } else {
-        guiTextElements['client_HUDLabel'].text = `Your final Score: ${playerList[clientID].score}\n`;
+        if (winnerId == clientID) {
+            guiTextElements['client_HUDLabel'].text = `You won the game!\nYour final Score: ${playerList[clientID].score}\n`;
+        } else {
+            guiTextElements['client_HUDLabel'].text = `Your final Score: ${playerList[clientID].score}\n`;
+        }
     }
 
     showPlayerResultsAndWinner(winnerId, results);
@@ -1804,79 +1817,79 @@ socket.on('clearGameResults', () => {
 
     // remove the glow from the winners head and controllers
     winnerHighlight.removeAllMeshes();
+
+    // scene.particleSystems.forEach((ps) => {
+    //     if (ps.id === 'confetti') {
+    //         ps.stop();
+    //         ps.dispose();
+    //     }
+    // });
 });
+
+function createWinnerParticleSystem() {
+    const winnerPs = new ParticleSystem("confetti", 500, scene); // 500 is the max number of particles
+    winnerPs.particleTexture = scene.getTextureByName("confettiTexture") as Texture;
+
+    // console.warn('No emitter found for confetti animation, using default emitter position.');
+    winnerPs.emitter = new Vector3(0, 1.5, 0);
+
+    winnerPs.createBoxEmitter(
+        new Vector3(-2, 3, -2),         // direction1
+        new Vector3(2.2, 4, 2.2),           // direction2
+        new Vector3(-0.1, -0.15, -0.1),     // minEmitBox
+        new Vector3(0.1, 0.15, 0.1)      // maxEmitBox
+    );
+
+    winnerPs.blendMode = ParticleSystem.BLENDMODE_ADD;
+
+    winnerPs.minSize = 0.02;
+    winnerPs.maxSize = 0.05;
+    winnerPs.minAngularSpeed = -Math.PI;
+    winnerPs.maxAngularSpeed = Math.PI;
+
+    // UPDATED: Drastically reduced emit power for a softer pop.
+    winnerPs.minEmitPower = 0.5;
+    winnerPs.maxEmitPower = 1.5;
+    winnerPs.updateSpeed = 0.0045;
+
+    // UPDATED: Increased the gravity (more negative Y) to pull them down sooner.
+    winnerPs.gravity = new Vector3(0, -20, 0);
+
+    winnerPs.minLifeTime = 0.4;
+    winnerPs.maxLifeTime = 0.9;
+    winnerPs.emitRate = 500; // Emit a burst of particles immediately
+    winnerPs.manualEmitCount = 500;
+    winnerPs.targetStopDuration = 2; // Stop emitting after 2 seconds
+    winnerPs.disposeOnStop = false;
+
+    return winnerPs;
+}
 
 function showWinnerConfettiAnimation(winnerId: string) {
     if (!playerList[winnerId]) {
         console.warn('No Winner found for confetti animation.');
         return;
     }
-    const textureRes = 32;
-    const confettiTexture = new DynamicTexture("confettiTex", textureRes, scene, true);
-    const ctx = confettiTexture.getContext();
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, textureRes, textureRes);
-    confettiTexture.update();
 
-    const confettiColors = [
-        Color3.FromHexString(playerStartInfos[playerList[winnerId].playerNumber].color), // Winner's color
-    ];
+    var winnerPs = createWinnerParticleSystem();
+    // var winnerPs = scene.getParticleSystemById('confetti') as ParticleSystem;
 
-    const particleSystems: ParticleSystem[] = [];
+    const confettiColor = Color3.FromHexString(playerStartInfos[playerList[winnerId].playerNumber].color);
 
-    confettiColors.forEach((color, index) => {
-        const ps = new ParticleSystem("confetti_" + index, 500, scene); // 500 is the max number of particles
-        ps.particleTexture = confettiTexture;
+    // using the winners ground plane as emitter
+    if (playerList[winnerId].playerNumber != 0) {
+        //winnerPs.emitter = new Vector3((scene.getMeshByName(`player${playerList[winnerId].playerNumber}GroundPlane`) as Mesh).position.x, 0, (scene.getMeshByName(`player${playerList[winnerId].playerNumber}GroundPlane`) as Mesh).position.z);
+        winnerPs.emitter = new Vector3(playerList[winnerId].position.x, playerList[winnerId].position.y, playerList[winnerId].position.z);
+    }
 
-        // using the winners head as emitter if it exists
-        // if (playerList[winnerId].headObj) {
-        //     ps.emitter = playerList[winnerId].headObj;
-        // }
+    winnerPs.color1 = new Color4(confettiColor.r, confettiColor.g, confettiColor.b, 1.0);
+    winnerPs.color2 = new Color4(confettiColor.r, confettiColor.g, confettiColor.b, 1.0);
+    winnerPs.colorDead = new Color4(confettiColor.r, confettiColor.g, confettiColor.b, 0.0);
 
-        // using the winners ground plane as emitter
-        if (playerList[winnerId].playerNumber != 0) {
-            //ps.emitter = new Vector3((scene.getMeshByName(`player${playerList[winnerId].playerNumber}GroundPlane`) as Mesh).position.x, 0, (scene.getMeshByName(`player${playerList[winnerId].playerNumber}GroundPlane`) as Mesh).position.z);
-            ps.emitter = new Vector3(playerList[winnerId].position.x, playerList[winnerId].position.y, playerList[winnerId].position.z);
-        } else {
-            // console.warn('No emitter found for confetti animation, using default emitter position.');
-            ps.emitter = new Vector3(0, 1.5, 0);
-        }
+    winnerPs.start();
 
-        // UPDATED: Lowered the Y values so the particles are pushed outward more than upward.
-        ps.createBoxEmitter(
-            new Vector3(-2, 3, -2),         // direction1
-            new Vector3(2.2, 4, 2.2),           // direction2
-            new Vector3(-0.1, -0.15, -0.1),     // minEmitBox
-            new Vector3(0.1, 0.15, 0.1)      // maxEmitBox
-        );
-
-        ps.color1 = new Color4(color.r, color.g, color.b, 1.0);
-        ps.color2 = new Color4(color.r, color.g, color.b, 1.0);
-        ps.colorDead = new Color4(color.r, color.g, color.b, 0.0);
-
-        ps.blendMode = ParticleSystem.BLENDMODE_ADD;
-
-        ps.minSize = 0.02;
-        ps.maxSize = 0.05;
-        ps.minAngularSpeed = -Math.PI;
-        ps.maxAngularSpeed = Math.PI;
-
-        // UPDATED: Drastically reduced emit power for a softer pop.
-        ps.minEmitPower = 0.5;
-        ps.maxEmitPower = 1.5;
-        ps.updateSpeed = 0.0045;
-
-        // UPDATED: Increased the gravity (more negative Y) to pull them down sooner.
-        ps.gravity = new Vector3(0, -20, 0);
-
-        ps.minLifeTime = 0.4;
-        ps.maxLifeTime = 0.9;
-        ps.manualEmitCount = 500;
-        ps.disposeOnStop = false;
-
-        ps.start();
-        particleSystems.push(ps);
-    });
+    //particleSystems.push(winnerPs);
+    //});
 }
 
 socket.on('playerDisconnected', (id) => {
@@ -2341,8 +2354,8 @@ function getLocalStorage() {
 ///////////////////////////// TESTING GROUND ////////////////////////////
 
 window.addEventListener('keydown', function (event) {
-    // Check if the key combination is Ctrl + I
-    /*if (event.ctrlKey && event.key === 'i') {
+    // Check if the key is I
+    if (event.key === 'i') {
         if (Inspector.IsVisible) {
             Inspector.Hide();
         } else {
@@ -2350,7 +2363,7 @@ window.addEventListener('keydown', function (event) {
                 embedMode: true,
             });
         }
-    }*/
+    }
 
     // add an event listener for ending the server und get the test results
     // c: client, n: network, x: end server without test results
