@@ -28,8 +28,8 @@ let playerUsingXR: boolean = false;
 let isVRMode: boolean = true;
 let autoJoinClient: boolean = false; //gets overritten by the server in the current state
 
-let gameTimeLengthClient: number = 0; // game timer time in seconds
-let gameTime: number = 0; // game time in seconds
+// let gameTimeLengthClient: number = 0; // game timer time in seconds
+// let gameTime: number = 0; // game time in seconds
 
 let playerList: { [key: string]: Player } = {};
 let previousPlayer: PreviousPlayerData | null = null;
@@ -940,7 +940,7 @@ socket.on('startPosDenied', (errorCode) => {
 // get all current Player Information from the Server at the start
 // and spawning all current players except yourself
 socket.on('currentState', (players: { [key: string]: Player }, ballColor: string,
-    playerStartInfosServer: { [key: number]: PlayerStartInfo }, sceneStartInfosServer: SceneStartInfos, autoJoin: boolean, gameTimeLength: number, serverInstanceId: string) => {
+    playerStartInfosServer: { [key: number]: PlayerStartInfo }, sceneStartInfosServer: SceneStartInfos, autoJoin: boolean, _gameTimeLength: number, serverInstanceId: string) => {
 
     const savedInstanceId = sessionStorage.getItem('serverInstanceId');
     if (savedInstanceId && savedInstanceId !== serverInstanceId) {
@@ -954,7 +954,7 @@ socket.on('currentState', (players: { [key: string]: Player }, ballColor: string
     clientTestArray.push(`----------Client received currentState----------`);
 
     autoJoinClient = autoJoin;
-    gameTimeLengthClient = gameTimeLength;
+    // gameTimeLengthClient = gameTimeLength;
 
     sceneStartInfos = sceneStartInfosServer;
     playerStartInfos = playerStartInfosServer;
@@ -1323,8 +1323,8 @@ socket.on('serverUpdate', (playerGameDataList, ballPosition, serverSendTime, ser
     socket.emit('ServerPong', serverSendTime, socket.id, serverUpdateCounter);
 });
 
-socket.on('gameTimeUpdate', (gameTimerInSeconds) => {
-    gameTime = gameTimerInSeconds;
+socket.on('gameTimeUpdate', (_gameTimerInSeconds) => {
+    // gameTime = gameTimerInSeconds;
 });
 
 // recieve a score update from the server
@@ -1475,14 +1475,9 @@ function addPlayer(player: Player, isPlayer: boolean) {
     player.controllerL.rotation = new Vector3(player.contrRotL.x, player.contrRotL.y, player.contrRotL.z);
     player.controllerL.material = player.headObj.material;
 
-    // player.headObj.isVisible = false;
-    // player.controllerL.isVisible = false;
-    // player.controllerR.isVisible = false;
-
     playerList[player.id].headObj = player.headObj;
     playerList[player.id].controllerR = player.controllerR;
     playerList[player.id].controllerL = player.controllerL;
-    //playerList[player.id].HUDMesh = player.HUDMesh;
 }
 
 // spawn the stuff for playing for the player
@@ -1494,18 +1489,16 @@ function addPlayerGameUtils(player: Player, isPlayer: boolean) {
     // add the players paddle
     player.paddle = MeshBuilder.CreateBox(`player_${player.id}_paddle`, { size: 1 });
     player.paddle.scaling = new Vector3(sceneStartInfos.playerPaddleSize.w, sceneStartInfos.playerPaddleSize.h, paddleThickness);
+    // set the rotation of the paddle according to the player position from the server
     player.paddle.rotation = new Vector3(playerStartInfos[player.inPosition].rotation.x, playerStartInfos[player.inPosition].rotation.y, playerStartInfos[player.inPosition].rotation.z);
+    // set the position of the paddle according to the player position from the server
     if (player.inPosition == 1) {
-        //player.paddle.scaling = new Vector3(paddleThickness, sceneStartInfos.playerPaddleSize.h, sceneStartInfos.playerPaddleSize.w);
         player.paddle.position = new Vector3(sceneStartInfos.playCubeSize.x / 2, player.contrPosR.y, player.contrPosR.z);
     } else if (player.inPosition == 2) {
-        //player.paddle.scaling = new Vector3(paddleThickness, sceneStartInfos.playerPaddleSize.h, sceneStartInfos.playerPaddleSize.w);
         player.paddle.position = new Vector3(-sceneStartInfos.playCubeSize.x / 2, player.contrPosR.y, player.contrPosR.z);
     } else if (player.inPosition == 3) {
-        //player.paddle.scaling = new Vector3(sceneStartInfos.playerPaddleSize.w, sceneStartInfos.playerPaddleSize.h, paddleThickness);
         player.paddle.position = new Vector3(player.contrPosR.x, player.contrPosR.y, sceneStartInfos.playCubeSize.z / 2);
     } else if (player.inPosition == 4) {
-        //player.paddle.scaling = new Vector3(sceneStartInfos.playerPaddleSize.w, sceneStartInfos.playerPaddleSize.h, paddleThickness);
         player.paddle.position = new Vector3(player.contrPosR.x, player.contrPosR.y, -sceneStartInfos.playCubeSize.z / 2);
     } else if (player.inPosition == 0) {
         player.paddle.position = new Vector3(player.contrPosR.x, player.contrPosR.y, player.contrPosR.z);
