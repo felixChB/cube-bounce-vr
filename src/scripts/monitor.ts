@@ -31,8 +31,7 @@ const guiRectElements: { [key: string]: GUI.Rectangle } = {};
 
 const ghostColor = '#bdbdbd';
 
-let gameTimeLengthClient: number = 0; // game timer time in seconds
-let gameTime: number = 0; // game time in seconds
+let gameTimeClient: number = 0; // game time in seconds
 
 // Get HTML Elements
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
@@ -741,7 +740,8 @@ socket.on('currentState', (players: { [key: string]: Player }, ballColor: string
     }
     sessionStorage.setItem('serverInstanceId', serverInstanceId);
 
-    gameTimeLengthClient = gameTimeLength;
+    gameTimeClient = gameTimeLength;
+    updateGameTimer();
 
     sceneStartInfos = sceneStartInfosServer;
     playerStartInfos = playerStartInfosServer;
@@ -823,8 +823,8 @@ socket.on('serverUpdate', (playerGameDataList, ballPosition, serverSendTime, ser
     socket.emit('ServerPong', serverSendTime, socket.id, serverUpdateCounter);
 });
 
-socket.on('gameTimeUpdate', (gameTimeInSeconds) => {
-    gameTime = gameTimeInSeconds;
+socket.on('gameTimeUpdate', (gameTime) => {
+    gameTimeClient = gameTime;
 
     updateGameTimer();
 });
@@ -1447,10 +1447,8 @@ canvasWrapper.addEventListener('click', () => {
 
 function updateGameTimer() {
     if (gameTimerDiv) {
-        let delta = gameTime;
-        // console.log('Game Timer Delta: ', delta, ' Game Time Client: ', gameTimeLengthClient, ' Game Time: ', gameTime);
-        let minutes = Math.floor((delta % (60 * 60)) / (60));
-        let seconds = Math.floor((delta % (60)) / 1);
+        let minutes = Math.floor((gameTimeClient % (60 * 60)) / (60));
+        let seconds = Math.floor((gameTimeClient % (60)) / 1);
         gameTimerDiv.innerHTML = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     }
 }
