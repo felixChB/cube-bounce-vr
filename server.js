@@ -533,7 +533,7 @@ io.on('connection', (socket) => {
         io.emit('scoreUpdate', socket.id, 0);
 
         if (playerList.length == 0) {
-            resetGame();
+            resetBall();
         }
     });
 
@@ -918,12 +918,11 @@ setInterval(function () {
             ball.position.z > playCubeSize.z / 2 + outOfBoundsValue || ball.position.z < -playCubeSize.z / 2 - outOfBoundsValue) {
 
 
-            // Reset Player points on miss --------------------------------------------------------------------------------------
+            // Subtract from player score if they missed
             if (ball.position.x > playCubeSize.x / 2 + outOfBoundsValue) {
                 // player 1 missed
                 Object.keys(playerList).forEach((key) => {
                     if (playerList[key].playerNumber == 1) {
-                        checkLeaderboard(playerList[key]);
                         playerList[key].score = scoreAfterMiss(playerList[key].score);
                         io.emit('scoreUpdate', playerList[key].id, playerList[key].score);
                     }
@@ -932,7 +931,6 @@ setInterval(function () {
                 // player 2 missed
                 Object.keys(playerList).forEach((key) => {
                     if (playerList[key].playerNumber == 2) {
-                        checkLeaderboard(playerList[key]);
                         playerList[key].score = scoreAfterMiss(playerList[key].score);
                         io.emit('scoreUpdate', playerList[key].id, playerList[key].score);
                     }
@@ -941,7 +939,6 @@ setInterval(function () {
                 // player 3 missed
                 Object.keys(playerList).forEach((key) => {
                     if (playerList[key].playerNumber == 3) {
-                        checkLeaderboard(playerList[key]);
                         playerList[key].score = scoreAfterMiss(playerList[key].score);
                         io.emit('scoreUpdate', playerList[key].id, playerList[key].score);
                     }
@@ -950,14 +947,13 @@ setInterval(function () {
                 // player 4 missed
                 Object.keys(playerList).forEach((key) => {
                     if (playerList[key].playerNumber == 4) {
-                        checkLeaderboard(playerList[key]);
                         playerList[key].score = scoreAfterMiss(playerList[key].score);
                         io.emit('scoreUpdate', playerList[key].id, playerList[key].score);
                     }
                 });
             }
             // Reset the ball
-            resetGame();
+            resetBall();
         } else {
             // make the ball always a litle bit faster
             ball.speed += 0.00001 * deltaTMultiplier * serverRefreshRate / 10;
@@ -970,7 +966,7 @@ setInterval(function () {
         // reset the ball if no player is in the game
         if (ball.position.x != 0 && ball.position.y != (playCubeSize.y / 2) - playCubeElevation && ball.position.z != 0) {
             console.log('No Players in the Game, resetting Ball.');
-            resetGame();
+            resetBall();
             io.emit('serverUpdate', prepareGameData(), ball.position, performance.now(), serverUpdateCounter);
             serverUpdateCounter++;
         }
@@ -1115,7 +1111,7 @@ function playerExitsGame(playerId) {
         playerList[playerId].score = 0;
         playerList[playerId].playerNumber = 0;
 
-        io.emit('playerExitGame', playerId);
+        io.emit('playerExitGame', playerId, { onlyExit: false });
         io.emit('scoreUpdate', playerId, 0);
     }
 }
@@ -1130,7 +1126,7 @@ function getNormalizedVector(vector) {
     return { x: vector.x / length, y: vector.y / length, z: vector.z / length };
 }
 
-function resetGame() {
+function resetBall() {
     ball.position = { x: 0, y: midPointOfPlayCube, z: 0 };
     ball.velocity = getNormalizedVector({ x: getRandomNumber(0.5, 2), y: getRandomNumber(0.5, 1), z: getRandomNumber(0.5, 2) });
     ball.speed = ballStartSpeed;
@@ -1479,7 +1475,7 @@ function setGameTimer() {
 
             console.log('Game Timer ended, resetting Game.');
 
-            resetGame(); // 3. Reset the game (ball position, velocity, speed and color)
+            resetBall(); // 3. Reset the game (ball position, velocity, speed and color)
 
             showGameResults(); // 4. Show the game results (personal scores and winner)
 
@@ -1519,6 +1515,7 @@ function showGameResults() {
     if (winnerId && winnerScore != undefined && results.length > 0) {
 
         console.log(`Game Results: Winner is Player ${winnerId} with a score of ${winnerScore}. Full results: `, results);
+        checkLeaderboard(playerList[winnerId]);
         io.emit('gameResults', winnerId, winnerScore, results);
     }
 }
