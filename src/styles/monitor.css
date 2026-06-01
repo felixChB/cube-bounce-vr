@@ -8,20 +8,34 @@ body {
     background-color: rgb(35, 35, 35);
 }
 
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: Arial, sans-serif;
     color: #333;
     position: relative;
+    display: flex;
+    flex-direction: column;
 }
 
 button {
     cursor: pointer;
+    background-color: #e2e2e2;
+    border-radius: 0px;
+    border: solid 1px #929292;
+    padding: 5px 10px;
+}
+
+button:hover {
+    background-color: #d4d4d4;
 }
 
 ul {
     list-style-type: none;
     padding: 0;
-    margin: 5px;
+    margin: 0;
 }
 
 li {
@@ -33,30 +47,37 @@ p {
 }
 
 #monitor-header {
-    position: fixed;
     display: flex;
     top: 0;
     left: 0;
     background-color: rgb(35, 35, 35);
     color: white;
-    padding: 0px;
-    height: 40px;
+    padding: 10px;
+    height: auto;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    z-index: 10;
+    flex: 0 1 auto;
 }
 
-#monitor-header div {
-    margin: 5px 10px;
+.control-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.btn-wrapper {
+    display: flex;
+    gap: 10px;
+    flex-direction: row;
 }
 
 #monitor-body-wrapper {
-    padding-top: 40px; /* Adjusted to account for the header height */
     display: flex;
     flex-direction: row;
     width: 100%;
     height: calc(100% - 40px);
+    flex: 1 1 auto;
 }
 
 #clients-wrapper {
@@ -68,6 +89,7 @@ p {
     color: white;
     overflow: hidden;
     transition: all 0.3s ease-out;
+    padding: 5px;
 }
 
 .expanded {
@@ -85,19 +107,18 @@ p {
     justify-content: center;
 }
 
-#clients-header:hover {
-    cursor: pointer;
-}
-
 #clients-headline {
     font-size: 1.2em;
     font-weight: normal;
-    margin: 10px 5px 5px 5px;
     position: relative;
+    margin: 0;
 }
 
 #clients-list {
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
+    gap: 5px;
 }
 
 /* #clients-headline::before {
@@ -113,39 +134,30 @@ p {
 
 .client {
     border: solid 1px white;
-    margin: 0px 5px 5px 5px;
+    padding: 5px;
 }
 
-.this-client {
+.client.this-client {
     color: red !important;
     border-color: red !important;
 }
 
-.leaderboard-client {
-    color: rgb(255 168 32) !important;
-    border-color: rgb(255 168 32) !important;
+.client.leaderboard-client {
+    color: rgb(255 168 32);
+    border-color: rgb(255 168 32);
 }
 
-.monitor-client {
-    color: rgb(255, 122, 144) !important;
-    border-color: rgb(255, 122, 144) !important;
+.client.monitor-client {
+    color: rgb(255, 122, 144);
+    border-color: rgb(255, 122, 144);
 }
 
-.player-client {
-    color: rgb(162, 128, 255) !important;
-    border-color: rgb(162, 128, 255) !important;
+.client.player-client {
+    color: rgb(162, 128, 255);
+    border-color: rgb(162, 128, 255);
 }
 
-.client-infos {
-    margin: 5px;
-}
-
-.leaderboard {
-    color: yellow !important;
-    border-color: yellow !important;
-}
-
-#game-monitor-wrapper {
+#canvas-wrapper {
     display: block;
     position: relative;
     width: 80%;
@@ -155,8 +167,7 @@ p {
 #game-timer {
     position: absolute;
     top: 0;
-    left: calc(50% - 40px);
-    width: 40px;
+    left: 50%;
     z-index: 100;
     color: red;
     border: solid 1px red;
@@ -164,7 +175,7 @@ p {
     padding: 5px;
 }
 
-#game-monitor-interface {
+#canvas-interface {
     display: block;
     width: 100%;
     height: 100%;
@@ -185,6 +196,8 @@ p {
 
 .player-div {
     border: solid 1px black;
+    padding: 5px;
+    background-color: rgba(0, 0, 0, 0.5);
 }
 
 #renderCanvas {
@@ -214,13 +227,14 @@ p {
         position: relative;
     }
 
-    #game-monitor-wrapper {
+    #canvas-wrapper {
         width: 100%;
     }
 
     #clients-header {
         height: 40px !important;
         width: 100%;
+        cursor: pointer;
     }
 
     #clients-wrapper {

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CUBE BOUNCE VR | Monitor Page</title>
-    <link rel="stylesheet" href="/src/styles/monitor-style.css">
+    <link rel="stylesheet" href="/src/styles/monitor.css">
     <script language="JavaScript" type="module" src="./dist/monitor.js" defer></script>
 </head>
 
@@ -14,60 +14,53 @@
         <div>
             <span>CUBE BOUNCE VR - Monitor</span>
         </div>
-        <div>
-            <button id="join-all-players">Join all players</button>
-            <button id="reload-all-players">Reload all players</button>
+        <div class="control-wrapper">
+            <div class="btn-wrapper">
+                <button id="join-all-players">Join all players / start game</button>
+                <button id="reload-all-players">Reload all player clients</button>
+            </div>
         </div>
-        <div>
-            <button id="toggle-interface">Toggle Interface</button>
-            <button id="reset-cam">Reset Camera Position</button>
+        <div class="control-wrapper">
+            <div class="btn-wrapper">
+                <button id="toggle-interface">Toggle Interface</button>
+                <button id="reset-cam">Reset Camera Position</button>
+            </div>
         </div>
-        <!-- <button id="clear-server-array">Clear Server Arrays</button>
-        <button id="collect-tests">Collect Tests</button> -->
-
     </div>
     <div id="monitor-body-wrapper">
-        <div id="game-monitor-wrapper">
-            <div id="game-monitor-interface">
+        <div id="canvas-wrapper">
+            <div id="canvas-interface">
                 <div id="player-section">
                     <div id="player-1" class="player-div">
                         <ul>
                             <li>Player 1</li>
-                            <li>ID:</li>
                             <li><button id="reload-1">Reload 1</button></li>
                             <li><button id="start-1">Join Game player 1</button></li>
                             <li><button id="kick-1">Kick player 1</button></li>
-                            <!-- <li><button id="recenter-1">Recenter 1</button></li> -->
                         </ul>
                     </div>
                     <div id="player-4" class="player-div">
                         <ul>
                             <li>Player 4</li>
-                            <li>ID:</li>
                             <li><button id="reload-4">Reload 4</button></li>
                             <li><button id="start-4">Join Game player 4</button></li>
                             <li><button id="kick-4">Kick player 4</button></li>
-                            <!-- <li><button id="recenter-4">Recenter 4</button></li> -->
                         </ul>
                     </div>
                     <div id="player-3" class="player-div">
                         <ul>
                             <li>Player 3</li>
-                            <li>ID:</li>
                             <li><button id="reload-3">Reload 3</button></li>
                             <li><button id="start-3">Join Game player 3</button></li>
                             <li><button id="kick-3">Kick player 3</button></li>
-                            <!-- <li><button id="recenter-3">Recenter 3</button></li> -->
                         </ul>
                     </div>
                     <div id="player-2" class="player-div">
                         <ul>
                             <li>Player 2</li>
-                            <li>ID:</li>
                             <li><button id="reload-2">Reload 2</button></li>
                             <li><button id="start-2">Join Game player 2</button></li>
                             <li><button id="kick-2">Kick player 2</button></li>
-                            <!-- <li><button id="recenter-2">Recenter 2</button></li> -->
                         </ul>
                     </div>
                 </div>

@@ -37,7 +37,7 @@ let gameTime: number = 0; // game time in seconds
 // Get HTML Elements
 const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
 
-const gameMonitorInterface = document.getElementById('game-monitor-interface') as HTMLDivElement;
+const canvasInterface = document.getElementById('canvas-interface') as HTMLDivElement;
 
 const toggleInterfaceBtn = document.getElementById('toggle-interface') as HTMLButtonElement;
 const resetCamBtn = document.getElementById('reset-cam') as HTMLButtonElement;
@@ -69,7 +69,7 @@ const clientsList = document.getElementById('clients-list');
 
 const clientsWrapper = document.getElementById('clients-wrapper') as HTMLDivElement;
 const clientHeader = document.getElementById('clients-header') as HTMLDivElement;
-const gameMonitorWrapper = document.getElementById('game-monitor-wrapper') as HTMLDivElement;
+const canvasWrapper = document.getElementById('canvas-wrapper') as HTMLDivElement;
 
 const gameTimerDiv = document.getElementById('game-timer') as HTMLDivElement;
 
@@ -863,7 +863,9 @@ socket.on('isLeaderboard', (id) => {
 
     let leaderboardClient = document.getElementById(id);
     if (leaderboardClient) {
-        leaderboardClient.classList.add('leaderboard');
+        if (!leaderboardClient.classList.contains('leaderboard-client')) {
+            leaderboardClient.classList.add('leaderboard-client');
+        }
     } else {
         console.log(`Leaderboard Client with ID ${id} not found.`);
     }
@@ -1361,10 +1363,10 @@ window.addEventListener('keydown', function (event) {
 ////////////////////////// END TESTING GROUND ////////////////////////////// 
 
 toggleInterfaceBtn.addEventListener('click', function () {
-    if (gameMonitorInterface.style.display === 'none') {
-        gameMonitorInterface.style.display = 'block';
+    if (canvasInterface.style.display === 'none') {
+        canvasInterface.style.display = 'block';
     } else {
-        gameMonitorInterface.style.display = 'none';
+        canvasInterface.style.display = 'none';
     }
 });
 
@@ -1435,7 +1437,7 @@ clientHeader.addEventListener('click', () => {
     }
 });
 
-gameMonitorWrapper.addEventListener('click', () => {
+canvasWrapper.addEventListener('click', () => {
     if (window.screen.width < 900) {
         if (clientsWrapper.classList.contains('expanded')) {
             clientsWrapper.classList.remove('expanded');
