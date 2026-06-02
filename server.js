@@ -1516,6 +1516,13 @@ function resetGame(resetWithResults = false) {
 function showGameResults() {
     let results = [];
 
+    // for testing multiple winners set all player scores to the same value
+    // Object.keys(playerList).forEach((key) => {
+    //     if (playerList[key].isPlaying) {
+    //         playerList[key].score = 10;
+    //     }
+    // });
+
     // get the winner array with all the winners (in case of a tie)
     let winners = determineWinners();
 
