@@ -1513,24 +1513,75 @@ function resetGame(resetWithResults = false) {
 }
 
 function showGameResults() {
-    let winnerId;
-    let winnerScore;
     let results = [];
+
+    // get the winner array with all the winners (in case of a tie)
+    let winners = determineWinners();
+
+    // get the results
     for (let id in playerList) {
-        if (playerList[id].isPlaying == true) {
-            results.push({ playerId: playerList[id].id, playerNumber: playerList[id].playerNumber, score: playerList[id].score });
-            if (!winnerId || playerList[id].score > playerList[winnerId].score) {
-                winnerId = id;
-                winnerScore = playerList[id].score;
+        if (playerList[id].isPlaying) {
+            results.push({
+                playerId: playerList[id].id,
+                playerNumber: playerList[id].playerNumber,
+                score: playerList[id].score
+            });
+        }
+    }
+
+    console.log('Winners:', winners);
+
+    if (results.length > 0) {
+        if (winners.length > 0) {
+
+            console.log(`Game Results: Winners found. Full results: `, results);
+            console.log(`Winners: `, winners);
+
+            // check all winners with the leaderboard and update the leaderboard if necessary
+            winners.forEach(winner => {
+                checkLeaderboard(playerList[winner.playerId]);
+            });
+
+
+            io.emit('gameResults', winners, results);
+        } else {
+            console.log('Game Results: No winner, no players, or all players have a score of 0. Full results: ', results);
+            io.emit('gameResults', [], results);
+        }
+    }
+}
+
+function determineWinners() {
+    let highestScore = 0;
+    let winners = [];
+
+    // 1. Find the absolute highest score among active players
+    for (let id in playerList) {
+        // We only care about active players
+        if (playerList[id].isPlaying) {
+            if (playerList[id].score > highestScore) {
+                highestScore = playerList[id].score;
             }
         }
     }
-    if (winnerId && winnerScore != undefined && results.length > 0) {
 
-        console.log(`Game Results: Winner is Player ${winnerId} with a score of ${winnerScore}. Full results: `, results);
-        checkLeaderboard(playerList[winnerId]);
-        io.emit('gameResults', winnerId, winnerScore, results);
+    // 2. If the highest score is 0, there are no winners
+    if (highestScore === 0) {
+        return winners; // Returns an empty array []
     }
+
+    // 3. Collect all players who match the highest score (handles ties)
+    for (let id in playerList) {
+        if (playerList[id].isPlaying && playerList[id].score === highestScore) {
+            winners.push({
+                playerId: playerList[id].id,
+                playerNumber: playerList[id].playerNumber,
+                score: playerList[id].score
+            });
+        }
+    }
+
+    return winners;
 }
 
 function clearGameResults() {

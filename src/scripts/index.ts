@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { /*Camera,*/ Engine, FreeCamera, /*Material,*/ /*PBRBaseMaterial,*/ PBRMaterial, Scene } from '@babylonjs/core';
+import { /*Camera,*/ Engine, FreeCamera, /*Material,*/ /*PBRBaseMaterial,*/ PBRMaterial, Scene, TextureUsage } from '@babylonjs/core';
 import { /*ArcRotateCamera,*/ MeshBuilder, GlowLayer, Animation, ParticleSystem } from '@babylonjs/core';
 import { DirectionalLight, PointLight } from '@babylonjs/core';
 import { Mesh, StandardMaterial, Texture, Color3, Color4, Vector3, Quaternion, CubeTexture, HighlightLayer, DynamicTexture } from '@babylonjs/core';
@@ -10,6 +10,8 @@ import * as GUI from '@babylonjs/gui';
 import '@babylonjs/loaders/glTF'; // Enable GLTF/GLB loader for loading controller models from WebXR Input registry
 
 import { Inspector } from '@babylonjs/inspector';
+
+const testingToolsEnabled = TextureUsage; // if true, testing tools will be enabled
 
 const socket = io();
 
@@ -1699,26 +1701,38 @@ function resetPlayersGameScene(playerId: string) {
 
 }
 
-socket.on('gameResults', (winnerId: string, _winnerScore: number, results: { playerId: string, playerNumber: number, score: number }[]) => {
+socket.on('gameResults', (winners: { playerId: string, playerNumber: number, score: number }[], results: { playerId: string, playerNumber: number, score: number }[]) => {
     console.log('Game Results: ', results);
+    console.log('Winners: ', winners);
 
     if (playerList[clientID]) {
         updateHUDPosition(playerList[clientID].playerNumber);
         guiTextElements['client_HUDLabel'].color = playerStartInfos[playerList[clientID].playerNumber].color;
         guiRectElements['client_HUDRect'].color = playerStartInfos[playerList[clientID].playerNumber].color;
 
-        if (winnerId == clientID) {
-            guiTextElements['client_HUDLabel'].text = `You won the game!\nYour final Score: ${playerList[clientID].score}\n`;
+        // Check if the current client is in the winners array
+        const isWinner = winners.some(winner => winner.playerId === clientID);
+
+        if (winners.length > 0) {
+            if (isWinner) {
+                guiTextElements['client_HUDLabel'].text = `You won the game!\nYour final Score: ${playerList[clientID].score}\n`;
+            } else {
+                guiTextElements['client_HUDLabel'].text = `Your final Score: ${playerList[clientID].score}\n`;
+            }
         } else {
-            guiTextElements['client_HUDLabel'].text = `Your final Score: ${playerList[clientID].score}\n`;
+            // No winners at all
+            guiTextElements['client_HUDLabel'].text = `Game Over!\nYour final Score: ${playerList[clientID].score}\n`;
         }
     }
 
-    showPlayerResultsAndWinner(winnerId, results);
-    showWinnerConfettiAnimation(winnerId);
+    showPlayerResultsAndWinner(winners, results);
+    // Trigger confetti for all winners
+    winners.forEach(winner => {
+        showWinnerConfettiAnimation(winner.playerId);
+    });
 });
 
-function showPlayerResultsAndWinner(winnerId: string, results: { playerId: string, playerNumber: number, score: number }[]) {
+function showPlayerResultsAndWinner(winners: { playerId: string, playerNumber: number, score: number }[], results: { playerId: string, playerNumber: number, score: number }[]) {
 
     // create a plane for each player to show the final score and the winner
     for (let i = 0; i < results.length; i++) {
@@ -1726,17 +1740,22 @@ function showPlayerResultsAndWinner(winnerId: string, results: { playerId: strin
         console.log('Showing player results over head');
         let playerResult = results[i];
 
+        // Check if this specific player is a winner
+        const isWinner = winners.some(winner => winner.playerId === playerResult.playerId);
+
         console.log(results[i].playerId, results[i].playerNumber, results[i].score);
 
-        // add a glow to the winners head and controllers
-        if (playerList[winnerId].headObj) {
-            winnerHighlight.addMesh(playerList[winnerId].headObj, Color3.FromHexString(playerStartInfos[playerList[winnerId].playerNumber].color));
-        }
-        if (playerList[winnerId].controllerR) {
-            winnerHighlight.addMesh(playerList[winnerId].controllerR, Color3.FromHexString(playerStartInfos[playerList[winnerId].playerNumber].color));
-        }
-        if (playerList[winnerId].controllerL) {
-            winnerHighlight.addMesh(playerList[winnerId].controllerL, Color3.FromHexString(playerStartInfos[playerList[winnerId].playerNumber].color));
+        // Add glow to the player's head and controllers ONLY if they are a winner
+        if (isWinner) {
+            if (playerList[playerResult.playerId].headObj) {
+                winnerHighlight.addMesh(playerList[playerResult.playerId].headObj as Mesh, Color3.FromHexString(playerStartInfos[playerResult.playerNumber].color));
+            }
+            if (playerList[playerResult.playerId].controllerR) {
+                winnerHighlight.addMesh(playerList[playerResult.playerId].controllerR as Mesh, Color3.FromHexString(playerStartInfos[playerResult.playerNumber].color));
+            }
+            if (playerList[playerResult.playerId].controllerL) {
+                winnerHighlight.addMesh(playerList[playerResult.playerId].controllerL as Mesh, Color3.FromHexString(playerStartInfos[playerResult.playerNumber].color));
+            }
         }
 
         let finalScoreMesh = MeshBuilder.CreatePlane(`finalScoreMesh_${playerResult.playerNumber}`, { size: 2 }, scene);
@@ -1768,7 +1787,8 @@ function showPlayerResultsAndWinner(winnerId: string, results: { playerId: strin
         finalScoreLabel.outlineWidth = 1;
         finalScoreRect.addControl(finalScoreLabel);
 
-        if (playerResult.playerId == winnerId) {
+        // Only draw the "WINNER" text if they won
+        if (isWinner) {
             var winnerLabel = new GUI.TextBlock();
             winnerLabel.textHorizontalAlignment = GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
             winnerLabel.verticalAlignment = GUI.Control.VERTICAL_ALIGNMENT_TOP;
@@ -1811,6 +1831,8 @@ socket.on('clearGameResults', () => {
 
     for (let id in playerList) {
         if (playerList[id].finalScoreMesh) {
+            playerList[id].finalScoreMesh.material?.getActiveTextures().forEach(tex => tex.dispose());
+            playerList[id].finalScoreMesh.material?.dispose();
             playerList[id].finalScoreMesh?.dispose();
         }
     }
@@ -2353,87 +2375,91 @@ function getLocalStorage() {
 
 ///////////////////////////// TESTING GROUND ////////////////////////////
 
-window.addEventListener('keydown', function (event) {
-    // Check if the key is I
-    if (event.key === 'i') {
-        if (Inspector.IsVisible) {
-            Inspector.Hide();
-        } else {
-            Inspector.Show(scene, {
-                embedMode: true,
-            });
-        }
-    }
+if (testingToolsEnabled) {
 
-    // add an event listener for ending the server und get the test results
-    // c: client, n: network, x: end server without test results
-    // if (event.key === 'x') {
-    //     socket.emit('collectingTests', 'shutdown');
-    // }
-    if (event.key === 'c') {
-        socket.emit('collectingTests', 'client');
-    }
-    if (event.key === 'n') {
-        socket.emit('collectingTests', 'network');
-    }
-    if (event.key === 'a') {
-        socket.emit('collectingTests', 'all');
-    }
-});
-
-socket.on('requestTestArray', () => {
-    // for (let i = 0; i < updateCounterArray.length; i++) {
-    //     if (updateCounterArray[i] == undefined) {
-    //         clientTestArray.push(`SUC: ${i}, ERROR: Serverupdate not recieved`);
-    //     }
-    // }
-    const testArrayToSend = clientTestArray;
-    const rldTestArrayToSend = renderLoopTableArray;
-    const fpsTestArrayToSend = fpsTableArray;
-    socket.emit('sendTestArray', testArrayToSend, rldTestArrayToSend, fpsTestArrayToSend);
-    console.log('Test Array sent to Server');
-    // clientTestArray = [];
-});
-
-socket.on('clearPlayerArray', () => {
-    console.log('Clearing Player Array');
-    playerList = {};
-    clientTestArray = [];
-    renderLoopTableArray = [];
-    fpsTableArray = [];
-
-    clientTestArray.push('------Player Arrays cleared------');
-});
-
-/*socket.on('clientPong', (serverClientSendTime) => {
-    const clientSendTime = serverClientSendTime;
-    const clientReceiveTime = Date.now();
-    const clientRoundTripTime = clientReceiveTime - clientSendTime;
-    // console.log('Client Round Trip Time: ', clientRoundTripTime);
-    socket.emit('clientRoundTripTime', clientRoundTripTime, socket.id);
-});*/
-
-// add an event lister for switching the winnerhighlight and the confetti animation on and off for testing purposes
-window.addEventListener('keydown', function (event) {
-    if (event.key === 'q') {
-        for (let id in playerList) {
-            if (playerList[id].headObj) {
-                winnerHighlight.addMesh(playerList[id].headObj, Color3.FromHexString(playerStartInfos[playerList[id].playerNumber].color));
-            }
-            if (playerList[id].controllerR) {
-                winnerHighlight.addMesh(playerList[id].controllerR, Color3.FromHexString(playerStartInfos[playerList[id].playerNumber].color));
-            }
-            if (playerList[id].controllerL) {
-                winnerHighlight.addMesh(playerList[id].controllerL, Color3.FromHexString(playerStartInfos[playerList[id].playerNumber].color));
+    window.addEventListener('keydown', function (event) {
+        // Check if the key is I
+        if (event.key === 'i') {
+            if (Inspector.IsVisible) {
+                Inspector.Hide();
+            } else {
+                Inspector.Show(scene, {
+                    embedMode: true,
+                });
             }
         }
-    } else if (event.key === 'e') {
-        winnerHighlight.removeAllMeshes();
-    } else if (event.key === 't') {
-        // for testing the confetti animation
-        const testWinnerId = Object.keys(playerList)[0]; // just take the first player in the list as the winner for testing
-        showWinnerConfettiAnimation(testWinnerId);
-    }
-});
+
+        // add an event listener for ending the server und get the test results
+        // c: client, n: network, x: end server without test results
+        // if (event.key === 'x') {
+        //     socket.emit('collectingTests', 'shutdown');
+        // }
+        if (event.key === 'c') {
+            socket.emit('collectingTests', 'client');
+        }
+        if (event.key === 'n') {
+            socket.emit('collectingTests', 'network');
+        }
+        if (event.key === 'a') {
+            socket.emit('collectingTests', 'all');
+        }
+    });
+
+    socket.on('requestTestArray', () => {
+        // for (let i = 0; i < updateCounterArray.length; i++) {
+        //     if (updateCounterArray[i] == undefined) {
+        //         clientTestArray.push(`SUC: ${i}, ERROR: Serverupdate not recieved`);
+        //     }
+        // }
+        const testArrayToSend = clientTestArray;
+        const rldTestArrayToSend = renderLoopTableArray;
+        const fpsTestArrayToSend = fpsTableArray;
+        socket.emit('sendTestArray', testArrayToSend, rldTestArrayToSend, fpsTestArrayToSend);
+        console.log('Test Array sent to Server');
+        // clientTestArray = [];
+    });
+
+    socket.on('clearPlayerArray', () => {
+        console.log('Clearing Player Array');
+        playerList = {};
+        clientTestArray = [];
+        renderLoopTableArray = [];
+        fpsTableArray = [];
+
+        clientTestArray.push('------Player Arrays cleared------');
+    });
+
+    /*socket.on('clientPong', (serverClientSendTime) => {
+        const clientSendTime = serverClientSendTime;
+        const clientReceiveTime = Date.now();
+        const clientRoundTripTime = clientReceiveTime - clientSendTime;
+        // console.log('Client Round Trip Time: ', clientRoundTripTime);
+        socket.emit('clientRoundTripTime', clientRoundTripTime, socket.id);
+    });*/
+
+    // add an event lister for switching the winnerhighlight and the confetti animation on and off for testing purposes
+    window.addEventListener('keydown', function (event) {
+        if (event.key === 'q') {
+            for (let id in playerList) {
+                if (playerList[id].headObj) {
+                    winnerHighlight.addMesh(playerList[id].headObj, Color3.FromHexString(playerStartInfos[playerList[id].playerNumber].color));
+                }
+                if (playerList[id].controllerR) {
+                    winnerHighlight.addMesh(playerList[id].controllerR, Color3.FromHexString(playerStartInfos[playerList[id].playerNumber].color));
+                }
+                if (playerList[id].controllerL) {
+                    winnerHighlight.addMesh(playerList[id].controllerL, Color3.FromHexString(playerStartInfos[playerList[id].playerNumber].color));
+                }
+            }
+        } else if (event.key === 'e') {
+            winnerHighlight.removeAllMeshes();
+        } else if (event.key === 't') {
+            // for testing the confetti animation
+            const testWinnerId = Object.keys(playerList)[0]; // just take the first player in the list as the winner for testing
+            showWinnerConfettiAnimation(testWinnerId);
+        }
+    });
+
+}
 
 ////////////////////////// END TESTING GROUND ////////////////////////////// 
