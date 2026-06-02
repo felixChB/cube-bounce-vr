@@ -27,8 +27,10 @@ let clientPlayer: Player | null = null;
 let playerUsingXR: boolean = false;
 // let clientStartPos: { x: number, y: number, z: number };
 
+//// Game Variables recieved from the server //// these will get initialized when the client receives the current state from the server at the beginning
 let isVRMode: boolean = true;
 let autoJoinClient: boolean = false; //gets overritten by the server in the current state
+let showParticleAnimationClient: boolean = false; // gets overritten by the server in the current state
 
 // let gameTimeLengthClient: number = 0; // game timer time in seconds
 // let gameTime: number = 0; // game time in seconds
@@ -953,7 +955,7 @@ socket.on('startPosDenied', (errorCode) => {
 // get all current Player Information from the Server at the start
 // and spawning all current players except yourself
 socket.on('currentState', (players: { [key: string]: Player }, ballColor: string,
-    playerStartInfosServer: { [key: number]: PlayerStartInfo }, sceneStartInfosServer: SceneStartInfos, autoJoin: boolean, _gameTimeLength: number, serverInstanceId: string) => {
+    playerStartInfosServer: { [key: number]: PlayerStartInfo }, sceneStartInfosServer: SceneStartInfos, autoJoin: boolean, _gameTimeLength: number, showParticleAnimation: boolean, serverInstanceId: string) => {
 
     const savedInstanceId = sessionStorage.getItem('serverInstanceId');
     if (savedInstanceId && savedInstanceId !== serverInstanceId) {
@@ -966,7 +968,9 @@ socket.on('currentState', (players: { [key: string]: Player }, ballColor: string
 
     clientTestArray.push(`----------Client received currentState----------`);
 
+    // Set the client-side variables based on the server data
     autoJoinClient = autoJoin;
+    showParticleAnimationClient = showParticleAnimation;
     // gameTimeLengthClient = gameTimeLength;
 
     sceneStartInfos = sceneStartInfosServer;
@@ -1728,7 +1732,7 @@ socket.on('gameResults', (winners: { playerId: string, playerNumber: number, sco
     showPlayerResultsAndWinner(winners, results);
     // Trigger confetti for all winners
     winners.forEach(winner => {
-        showWinnerConfettiAnimation(winner.playerId);
+        showWinnerParticleAnimation(winner.playerId);
     });
 });
 
@@ -1887,7 +1891,10 @@ function createWinnerParticleSystem() {
     return winnerPs;
 }
 
-function showWinnerConfettiAnimation(winnerId: string) {
+function showWinnerParticleAnimation(winnerId: string) {
+    if (showParticleAnimationClient == false) {
+        return;
+    }
     if (!playerList[winnerId]) {
         console.warn('No Winner found for confetti animation.');
         return;
@@ -2456,7 +2463,7 @@ if (testingToolsEnabled) {
         } else if (event.key === 't') {
             // for testing the confetti animation
             const testWinnerId = Object.keys(playerList)[0]; // just take the first player in the list as the winner for testing
-            showWinnerConfettiAnimation(testWinnerId);
+            showWinnerParticleAnimation(testWinnerId);
         }
     });
 

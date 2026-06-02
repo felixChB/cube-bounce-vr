@@ -27,6 +27,8 @@ import { playCubeSize, playCubeElevation, playerAreaDepth, playerAreaDistance, p
 import { leaderboardLength } from "./config.js";
 // Server Auto join settings
 import { autoJoin, firstEnteredTimerTime, areaExitTimerTime, areaEnteredTimerTime, enteredDelayTime, exitDelayTime } from "./config.js";
+// Client side settings
+import { showParticleAnimation } from "./config.js";
 
 const port = process.env.PORT || 3000;
 
@@ -366,7 +368,7 @@ io.on('connection', (socket) => {
 
     // !5
     // Send the current state to the new player
-    socket.emit('currentState', playerList, activeColor, playerStartInfos, sceneStartinfos, autoJoin, gameTimeLength, currentServerInstanceId);
+    socket.emit('currentState', playerList, activeColor, playerStartInfos, sceneStartinfos, autoJoin, gameTimeLength, showParticleAnimation, currentServerInstanceId);
 
     // start as a previous player
     /*socket.on('continueAsPreviousPlayer', (previousPlayerData) => {
@@ -1536,8 +1538,6 @@ function showGameResults() {
             });
         }
     }
-
-    console.log('Winners:', winners);
 
     if (results.length > 0) {
         if (winners.length > 0) {
