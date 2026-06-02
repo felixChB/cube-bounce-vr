@@ -38,3 +38,6 @@ export const areaExitTimerTime = 3000; // in milliseconds
 export const areaEnteredTimerTime = 3000; // in milliseconds
 export const enteredDelayTime = 1000; // in milliseconds
 export const exitDelayTime = 1000; // in milliseconds
+
+//// Testing settings ////
+// export const testingToolsEnabled = true; // if true, testing tools will be enabled
