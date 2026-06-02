@@ -422,6 +422,7 @@ io.on('connection', (socket) => {
 
     socket.on('requestAllJoinGame', (isMasterRequest) => {
         if (isMasterRequest) {
+            console.log('Start Game with Timer and join all Players.');
             for (let id in playerList) {
                 if (playerList[id].isPlaying == false) {
                     for (let i = 1; i <= 4; i++) {
@@ -673,7 +674,7 @@ io.on('connection', (socket) => {
         io.emit('isLeaderboard', socket.id);
     });
     socket.on('requestLeaderboard', () => {
-        console.log('Leaderboard requested.');
+        // console.log('Leaderboard requested.');
         socket.emit('sendLeaderboard', leaderboard);
     });
 
@@ -1452,7 +1453,7 @@ function writeLeaderboardToFile() {
         if (err) {
             console.error('Error writing leaderboard to file', err);
         } else {
-            console.log('Leaderboard written to file');
+            // console.log('Leaderboard written to file');
         }
     });
 }
@@ -1605,7 +1606,7 @@ function exitPlayerFully(playerId, withReset = false) {
     playerList[playerId].isPlaying = false;
 
     if (withReset) {
-        console.log(`Exiting and Resetting Player ${playerId} fully.`);
+        // console.log(`Exiting and Resetting Player ${playerId} fully.`);
 
         playerList[playerId].score = 0;
         playerList[playerId].playerNumber = 0;
@@ -1613,7 +1614,7 @@ function exitPlayerFully(playerId, withReset = false) {
         io.emit('playerExitGame', playerId, { onlyExit: false });
         io.emit('scoreUpdate', playerId, 0);
     } else {
-        console.log(`Exiting Player ${playerId} from the game without resetting.`);
+        // console.log(`Exiting Player ${playerId} from the game without resetting.`);
         io.emit('playerExitGame', playerId, { onlyExit: true });
     }
 }
