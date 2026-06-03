@@ -6,6 +6,7 @@ body {
     width: 100%;
     /* overflow: hidden; */
     background-color: rgb(35, 35, 35);
+    font-family: monospace, monospace;
 }
 
 * {
@@ -13,7 +14,6 @@ body {
 }
 
 body {
-    font-family: Arial, sans-serif;
     color: #333;
     position: relative;
     display: flex;
@@ -42,7 +42,7 @@ ul {
 }
 
 li {
-    margin: 5px 0;
+    margin: 0 0 5px 0;
 }
 
 p {
@@ -190,6 +190,7 @@ p {
     border: solid 1px red;
     background-color: #2f0b0b;
     padding: 5px;
+    font-family: monospace, monospace;
 }
 
 #canvas-interface {
@@ -215,6 +216,11 @@ p {
     border: solid 1px black;
     padding: 5px;
     background-color: rgba(0, 0, 0, 0.5);
+}
+
+.player-headline {
+    font-size: 1.2em;
+    font-weight: bold;
 }
 
 #renderCanvas {
