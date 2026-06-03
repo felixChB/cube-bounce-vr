@@ -22,14 +22,17 @@ body {
 
 button {
     cursor: pointer;
-    background-color: #e2e2e2;
+    background-color: white;
     border-radius: 0px;
-    border: solid 1px #929292;
+    border: solid 1px black;
     padding: 5px 10px;
+    text-transform: uppercase;
 }
 
 button:hover {
-    background-color: #d4d4d4;
+    background-color: rgb(163, 164, 173);
+    color: black;
+    border-color: black;
 }
 
 ul {
@@ -70,6 +73,20 @@ p {
     display: flex;
     gap: 10px;
     flex-direction: row;
+}
+
+#join-all-players {
+    background-color: #2f0b0b;
+    font-size: 14px;
+    border-color: red;
+    color: red;
+}
+
+#join-all-players:hover {
+    background-color: red;
+    font-size: 14px;
+    border-color: black;
+    color: black;
 }
 
 #monitor-body-wrapper {
@@ -171,7 +188,7 @@ p {
     z-index: 100;
     color: red;
     border: solid 1px red;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: #2f0b0b;
     padding: 5px;
 }
 
